@@ -1,0 +1,10 @@
+(setf (symbol-function 'my-func) '(closure ((x . 4) t) nil (setq x (1+ x))))
+
+
+(setf (symbol-function 'my-func) nil)
+
+
+(funcall 'my-func)
+
+
+
