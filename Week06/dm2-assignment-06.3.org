@@ -1,0 +1,186 @@
+#+TITLE: DM2 Assignment 06.3
+#+LANGUAGE: en
+#+OPTIONS: H:4 num:nil toc:nil \n:nil @:t ::t |:t ^:t *:t TeX:t LaTeX:t
+#+OPTIONS: html-postamble:nil
+#+STARTUP: showeverything entitiespretty
+#+SETUPFILE: theme-bigblow.setup
+
+[[elisp:(find-file-other-window%20"generic-instructions.org")][Read Instructions]]
+[[elisp:(progn%20(save-buffer)%20(browse-url-of-file%20(org-html-export-to-html)))][Export to HTML and Browse]]
+[[elisp:(progn%20(save-buffer)%20(org-clock-report%201)%20(save-buffer))][Insert/Update Clock Summary Report]]
+#+BEGIN: clocktable :scope file :maxlevel 2
+#+CAPTION: Clock summary at [2018-10-29 Mon 15:59]
+| Headline                         |   Time |
+|----------------------------------+--------|
+| *Total time*                     | *1:06* |
+|----------------------------------+--------|
+| Apply Bayes\rsquo{} Theorem             |   0:28 |
+| Compute Four Leaves              |   0:13 |
+| Apply Your Probability Knowledge |   0:07 |
+| Apply Bayes\rsquo{} Theorem Generalized |   0:12 |
+| Apply Bayes\rsquo{} Theorem...          |   0:06 |
+#+END:
+
+
+* DONE Apply Bayes\rsquo{} Theorem
+  CLOSED: [2018-10-29 Mon 12:15]
+  :LOGBOOK:
+  CLOCK: [2018-10-29 Mon 11:47]--[2018-10-29 Mon 12:15] =>  0:28
+  :END:
+
+  Automating the process of finding bugs in source code requires the use of
+  heuristics, or pattern-matching on the code. There is no deep understanding
+  of the code involved, hence such a tool cannot be perfect at detecting bugs.
+  A certain bug-detection tool is correct 80% of the time and incorrect the
+  rest of the time. This means that on average out of every 100 bugs, the tool
+  will detect 80 of them, and fail to detect 20 of them. Also, out of 100
+  non-bugs, the tool will report 20 bugs and 80 non-bugs, on average. The tool
+  is run on source code that is 10% buggy. That is, one line out of every ten
+  contains a bug. Given that the tool detects a bug in some line of code, what
+  is the probability that this line of code actually contains a bug?
+
+  Correct 80% of time -- of 100 bugs it will detect 80 -- of 100 non-bugs 80 non-bugs will be reported
+
+  Source code is 10% buggy -- one of every ten lines contains a bug
+
+  What is the probability that the line contains a bug,
+  given that the the tool detected a bug.
+
+  (* .8 .1)0.08000000000000002
+  (* .8 .9)0.7200000000000001
+  (* .2 .1)0.020000000000000004
+  (* .2 .9)0.18000000000000002
+
+  Assuming 100 lines of code:
+
+  |     | hit | mis |     |
+  | bug |   8 |   2 |  10 |
+  | not |  18 |  72 |  90 |
+  |     |  26 |  74 | 100 |
+
+  (* 90.0 .2)18.0
+  (- 90 18)72
+
+  There are 26 posibilities where the tool would detect a bug,
+  only 8 of which would actually be a bug.
+
+  (/ 8.0 26)0.3076923076923077
+
+  There is a 30.77% chance that the line of code actually contains a bug,
+  given that the tool detected a bug.
+
+* DONE Compute Four Leaves
+  CLOSED: [2018-10-29 Mon 12:28]
+  :LOGBOOK:
+  CLOCK: [2018-10-29 Mon 12:15]--[2018-10-29 Mon 12:28] =>  0:13
+  :END:
+
+  Using the information in the previous task, calculate to two-decimal-digit
+  precision the values that go at the leaves of the binary tree shown below,
+  where the arrow pointing to the topmost leaf is labeled to show what goes
+  there. Hint: The four leaves correspond to the four quadrants of trutH versus
+  tesT described in the file on [[file:~/mebewiyo/W17/2dm/week07/bayes-theorem.org][Bayes\rsquo{} Theorem]].
+
+  :             / (* .10 (/ 8.0 10))0.08000000000000002
+  :            /<---------------------- p(H) * p(T | H) goes here
+  :           / p(T | H)                               
+  :          /                                         
+  :         /\                                         
+  :        /  \ p(!T | H)                              
+  :  p(H) /    \                                       
+  :      /      \ (* .10 (/ 2.0 10))0.020000000000000004
+  :     /                                               
+  :     \                                               
+  :      \      / (* .90 (/ 18.0 90))0.18000000000000002
+  : p(!H) \    /                                        
+  :        \  / p(T | !H)                               
+  :         \/                                          
+  :          \                                          
+  :           \ p(!T | !H)                              
+  :            \                                        
+  :             \ (* .90 (/ 72.0 90))0.7200000000000001                  
+
+* DONE Apply Your Probability Knowledge
+  CLOSED: [2018-10-29 Mon 12:35]
+  :LOGBOOK:
+  CLOCK: [2018-10-29 Mon 12:28]--[2018-10-29 Mon 12:35] =>  0:07
+  :END:
+
+  There are three sheets of paper in a folder. One sheet has writing on both
+  sides, one has writing on one side and is blank on the other side, and the
+  third sheet of paper is blank on both sides. Without looking you randomly pull
+  one sheet of paper out of the folder and see that it is blank on the side
+  you\rsquo{}re looking at. What is the probability that the other side is blank as
+  well?
+
+  BB
+  BW
+  WW
+
+  Given that Blank is seen:
+
+  You could be looking at the BB or the BW or the other side of BB
+  There are three posibilities if a Blank is seen.
+  Two of those possiblities would result ins having Blank of the other side:
+  
+  So, the probability of the other side being blank is:
+  2 / 3
+
+* DONE Apply Bayes\rsquo{} Theorem Generalized
+  CLOSED: [2018-10-29 Mon 15:32]
+  :LOGBOOK:
+  CLOCK: [2018-10-29 Mon 15:15]--[2018-10-29 Mon 15:27] =>  0:12
+  :END:
+
+  Three different vegetables, turnips, eggplant and asparagus, make Bill sick
+  sometimes. There is a 50% chance he will be sick if he eats turnips. If he
+  eats eggplant, there is a 20% chance he will be sick. The probability that he
+  will be sick when he eats asparagus is only 5%.
+
+  Bill gets sick after dinner where he ate one of those three vegetables. What
+  is the probability that he ate turnips?
+
+  (Assume that for each of the three vegetables, there is a 1/3 chance he ate
+  it.)
+
+  |       | sick |     |     |
+  | turn  |   50 |  50 | 100 |
+  | egg   |   20 |  80 | 100 |
+  | aspar |    5 |  95 | 100 |
+  |       |   75 | 225 | 300 |
+
+  (+ 50 20 5)75
+  (+ 50 80 95)225
+
+  (/ 50.0 75)0.6666666666666666
+
+  There is a 66.66% chance that he got sick because of a Turnip.
+
+* DONE Apply Bayes\rsquo{} Theorem Generalized With Different Priors
+  CLOSED: [2018-10-29 Mon 15:33]
+  :LOGBOOK:
+  CLOCK: [2018-10-29 Mon 15:27]--[2018-10-29 Mon 15:33] =>  0:06
+  :END:
+
+  Change the prior probabilities of Bill eating these vegetables to a 30% chance
+  he ate turnips, a 10% chance he ate eggplant, and a 60% chance he ate
+  asparagus?
+
+  Now what is the probability that Bill ate turnips, given that he got sick?
+
+  |       | Sick |     |      |
+  | turn  |  150 | 150 |  300 |
+  | egg   |   20 |  80 |  100 |
+  | aspar |   30 | 570 |  600 |
+  |       |  200 | 800 | 1000 |
+
+  (* 600 .05)30.0
+  (* 600 .95)570.0
+
+  (+ 150 20 30)200
+  (+ 150 80 570)800
+
+  (/ 150.0 200)0.75
+
+  There is a 75% chance that Bill would have gotten sick because of a Turnip
+

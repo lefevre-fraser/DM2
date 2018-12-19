@@ -1,0 +1,26 @@
+* Quiz 7.1
+(mod 627023653815768 24)0
+
+(let ((n 23))
+     (mod n 7)
+     (mod (* 5 n) 7))
+     3
+
+(expt 7 9999)
+-1367395647517459401
+
+(/ (+ 3 5) 2.0)4.0
+(/ (+ 17 19) 2.0)
+
+(crt-solve 2 9 7)163
+
+#+BEGIN_SRC shell :results output
+java -version
+#+END_SRC
+
+#+RESULTS:
+: Microsoft Windows [Version 10.0.17134.345]
+: (c) 2018 Microsoft Corporation. All rights reserved.
+: 
+: c:\Users\mp3le\Desktop\Share\BYUI\CS 238>More? 
+

@@ -1,0 +1,390 @@
+#+TITLE: STU Trees II
+#+LANGUAGE: en
+#+OPTIONS: H:4 num:nil toc:nil \n:nil @:t ::t |:t ^:t *:t TeX:t LaTeX:t
+#+OPTIONS: html-postamble:nil
+#+STARTUP: showeverything entitiespretty
+#+SETUPFILE: theme-bigblow.setup
+ 
+[[elisp:(find-file-other-window%20"generic-instructions.org")][Read Instructions]]
+[[elisp:(progn%20(save-buffer)%20(browse-url-of-file%20(org-html-export-to-html)))][Export to HTML and Browse]]
+[[elisp:(progn%20(save-buffer)%20(org-clock-report%201)%20(save-buffer))][Insert/Update Clock Summary Report]]
+
+* TODO Solve the Huffman Tree Problem Using a Heap Data Structure
+  Specifically, you will want to use the following five functions:
+  - heap-build
+  - heap-size
+  - heap-root
+  - heap-delete-root
+  - heap-add
+
+#+BEGIN_SRC elisp :results silent :tangle heap.el :lexical t
+;; -*- lexical-binding: t; -*-
+;;; heap.el --- Heap (a.k.a. priority queue) data structure
+
+;; Copyright (C) 2004-2006, 2008, 2012-2013, 2017  Free Software Foundation, Inc
+
+;; Author: Toby Cubitt <toby-predictive@dr-qubit.org>
+;; Version: 0.5
+;; Keywords: extensions, data structures, heap, priority queue
+;; URL: http://www.dr-qubit.org/emacs.php
+;; Repository: http://www.dr-qubit.org/git/predictive.git
+
+;; This file is part of Emacs.
+;;
+;; GNU Emacs is free software: you can redistribute it and/or modify it under
+;; the terms of the GNU General Public License as published by the Free
+;; Software Foundation, either version 3 of the License, or (at your option)
+;; any later version.
+;;
+;; GNU Emacs is distributed in the hope that it will be useful, but WITHOUT
+;; ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+;; FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+;; more details.
+;;
+;; You should have received a copy of the GNU General Public License along
+;; with GNU Emacs.  If not, see <http://www.gnu.org/licenses/>.
+
+
+;;; Commentary:
+;;
+;; A heap is a form of efficient self-sorting tree. In particular, the root
+;; node is guaranteed to be the highest-ranked entry in the tree. (The
+;; comparison function used for ranking the data can, of course, be freely
+;; defined). Therefore repeatedly removing the root node will return the data
+;; in order of increasing rank. They are often used as priority queues, for
+;; scheduling tasks in order of importance.
+;;
+;; This package implements ternary heaps, since they are about 12% more
+;; efficient than binary heaps for heaps containing more than about 10
+;; elements, and for very small heaps the difference is negligible. The
+;; asymptotic complexity of ternary heap operations is the same as for a
+;; binary heap: 'add', 'delete-root' and 'modify' operations are all O(log n)
+;; on a heap containing n elements.
+;;
+;; Note that this package implements a heap as an implicit data structure on a
+;; vector. Therefore, the maximum size of the heap has to be specified in
+;; advance. Although the heap will grow dynamically if it becomes full, this
+;; requires copying the entire heap, so insertion has worst-case complexity
+;; O(n) instead of O(log n), though the amortized complexity is still
+;; O(log n). (For applications where the maximum size of the heap is not known
+;; in advance, an implementation based on binary trees might be more suitable,
+;; but is not currently implemented in this package.)
+;;
+;; You create a heap using `make-heap', add elements to it using `heap-add',
+;; delete and return the root of the heap using `heap-delete-root', and modify
+;; an element of the heap using `heap-modify'. A number of other heap
+;; convenience functions are also provided, all with the prefix
+;; `heap-'. Functions with prefix `heap--' are for internal use only, and
+;; should never be used outside this package.
+
+
+;;; Code:
+
+(eval-when-compile (require 'cl))
+
+(defmacro heap--when-generators (then)
+  "Evaluate THEN if `generator' library is available."
+  (declare (debug t))
+  (if (require 'generator nil 'noerror) then))
+
+
+;;; ================================================================
+;;;        Internal functions for use in the heap package
+
+(defstruct (heap-
+	    :named
+	    (:constructor nil)
+	    (:constructor heap--create
+			  (cmpfun &optional (size 10) (resize 2)
+			   &aux
+			   (vect (make-vector size nil))
+			   (count 0)))
+	    (:copier nil))
+  vect cmpfun count size resize)
+
+
+(defun heap--child (heap i)    ; INTERNAL USE ONLY
+  ;; Compare the 3 children of element I, and return element reference
+  ;; of the smallest/largest (depending on whethen it's a min- or
+  ;; max-heap).
+  (let* ((vect (heap--vect heap))
+	 (cmpfun (heap--cmpfun heap))
+	 (count (heap--count heap))
+	 (j nil) (k (* 3 i)))
+    ;; Lots of if's in case I has less than three children.
+    (if (>= (1+ k) count) nil
+      (if (>= (+ 2 k) count) (1+ k)
+	(setq j (if (funcall cmpfun (aref vect (1+ k))
+			     (aref vect (+ 2 k)))
+		    (1+ k) (+ 2 k)))
+	(if (>= (+ 3 k) count) j
+	  (if (funcall cmpfun (aref vect j) (aref vect (+ 3 k)))
+	      j (+ 3 k)))))))
+
+
+(defsubst heap--vswap (vect i j)   ; INTERNAL USE ONLY
+  ;; Swap elements I and J of vector VECT.
+  (let ((tmp (aref vect i)))
+    (aset vect i (aref vect j))
+    (aset vect j tmp) vect))
+
+
+(defun heap--sift-up (heap n)   ; INTERNAL USE ONLY
+  ;; Sift-up starting from element N of vector belonging to HEAP.
+  (let* ((i n) (j nil) (vect (heap--vect heap)) (v (aref vect n)))
+    ;; Keep moving element up until it reaches top or is smaller/bigger
+    ;; than its parent.
+    (while (and (> i 0)
+		(funcall (heap--cmpfun heap) v
+			 (aref vect (setq j (/ (1- i) 3)))))
+      (heap--vswap vect i j)
+      (setq i j))))
+
+
+(defun heap--sift-down (heap n)   ; INTERNAL USE ONLY
+  ;; Sift-down from element N of the heap vector belonging HEAP.
+  (let* ((vect (heap--vect heap))
+	(cmpfun (heap--cmpfun heap))
+	(i n) (j (heap--child heap i))
+	(v (aref vect n)))
+    ;; Keep moving the element down until it reaches the bottom of the
+    ;; tree or reaches a position where it is bigger/smaller than all
+    ;; its children.
+    (while (and j (funcall cmpfun (aref vect j) v))
+      (heap--vswap vect i j)
+      (setq i j)
+      (setq j (heap--child heap i)))))
+
+
+
+;;; ================================================================
+;;;          The public functions which operate on heaps.
+
+;;;###autoload
+(defun make-heap
+  (compare-function &optional initial-size resize-factor)
+  "Create an empty heap with comparison function COMPARE-FUNCTION.
+
+COMPARE-FUNCTION takes two arguments, A and B, and returns
+non-nil or nil. To implement a max-heap, it should return non-nil
+if A is greater than B. To implemenet a min-heap, it should
+return non-nil if A is less than B.
+
+Optional argument INITIAL-SIZE sets the initial size of the heap,
+defaulting to 10. Optional argument RESIZE-FACTOR sets the factor
+by which the heap's size is increased if it runs out of space,
+defaulting to 2."
+  ;; sadly, passing null values over-rides the defaults in the defstruct
+  ;; `heap--create', so we have to explicitly set the defaults again
+  ;; here
+  (or initial-size (setq initial-size 10))
+  (or resize-factor (setq resize-factor 2))
+  (heap--create compare-function initial-size resize-factor))
+
+
+;;;###autoload
+(defalias 'heap-create 'make-heap)
+
+
+(defun heap-copy (heap)
+ "Return a copy of heap HEAP."
+ (let ((newheap (heap--create (heap--cmpfun heap) (heap--size heap)
+			      (heap--resize heap))))
+   (setf (heap--vect newheap) (vconcat (heap--vect heap))
+	 (heap--count newheap) (heap--count heap))
+   newheap))
+
+
+(defun heap-empty (heap)
+  "Return t if the heap is empty, nil otherwise."
+  (= 0 (heap--count heap)))
+
+
+(defun heap-size (heap)
+  "Return the number of entries in the heap."
+  (heap--count heap))
+
+
+(defun heap-compare-function (heap)
+  "Return the comparison function for the heap HEAP."
+  (heap--cmpfun heap))
+
+
+(defun heap-add (heap data)
+  "Add DATA to the heap, and return DATA."
+  ;; Add data to bottom of heap and sift-up from bottom.
+  (let ((count (heap--count heap))
+	(size (heap--size heap))
+	(vect (heap--vect heap)))
+    ;; if there's no space left, grow the heap
+    (if (< count size)
+	(aset vect count data)
+      (setf (heap--vect heap)
+	    (vconcat (heap--vect heap) (vector data)
+		     (make-vector
+		      (1- (ceiling (* size (1- (heap--resize heap)))))
+		      nil))
+	    (heap--size heap)
+	    (ceiling (* size (heap--resize heap)))))
+    (setq count (setf (heap--count heap) (1+ (heap--count heap))))
+    (heap--sift-up heap (1- count)))
+  ;; return inserted data
+  data)
+
+
+(defun heap-root (heap)
+  "Return the root of the heap, without removing it"
+  (if (= (heap--count heap) 0) nil (aref (heap--vect heap) 0)))
+
+
+(defun heap-delete-root (heap)
+  "Return the root of the heap and delete it from the heap."
+  (let ((vect (heap--vect heap))
+	root count)
+    ;; deal with empty heaps and heaps with just one element
+    (if (= 0 (heap--count heap)) nil
+      (setq root (aref vect 0)
+	    count (decf (heap--count heap)))
+      (if (= 0 count)
+	  (setf (heap--vect heap) (make-vector 10 nil))
+	;; delete root, swap last element to top, and sift-down from top
+	(aset vect 0 (aref vect count))
+	(aset vect count nil)
+	(heap--sift-down heap 0))
+      root)))
+
+
+(defun heap-modify (heap match-function data)
+  "Replace the first heap entry identified by MATCH-FUNCTION
+with DATA, if a match exists. Return t if there was a match, nil
+otherwise.
+
+The function MATCH-FUNCTION should take one argument of the type
+stored in the heap, and return non-nil if it should be modified,
+nil otherwise.
+
+Note that only the match highest up the heap is modified."
+  (let ((vect (heap--vect heap))
+	(count (heap--count heap))
+	(i 0))
+    ;; search vector for the first match
+    (while (and (< i count)
+		(not (funcall match-function (aref vect i))))
+      (setq i (1+ i)))
+    ;; if a match was found, modify it
+    (if (< i count)
+	(let ((olddata (aref vect i)))
+	  (aset vect i data)
+	  ;; if the new data is greater than old data, sift-up,
+	  ;; otherwise sift-down
+	  (if (funcall (heap--cmpfun heap) data olddata)
+	      (heap--sift-up heap i)
+	    (heap--sift-down heap i))
+	  t)  ; return t if the match was successfully modified
+      nil)))  ; return nil if no match was found
+
+
+(defun heap-build (compare-function vec &optional resize-factor)
+  "Build a heap from vector VEC with COMPARE-FUNCTION
+as the comparison function.
+
+Note that VEC is modified, and becomes part of the heap data
+structure. If you don't want this, copy the vector first and pass
+the copy in VEC.
+
+COMPARE-FUNCTION takes two arguments, A and B, and returns
+non-nil or nil. To implement a max-heap, it should return non-nil
+if A is greater than B. To implemenet a min-heap, it should
+return non-nil if A is less than B.
+
+RESIZE-FACTOR sets the factor by which the heap's size is
+increased if it runs out of space, defaulting to 2."
+  (or resize-factor (setq resize-factor 2))
+  (let ((heap (heap--create compare-function (length vec) resize-factor))
+	(i (ceiling
+	    (1- (expt 3 (ceiling (1- (log (1+ (* 2 (length vec))) 3))))) 2)))
+    (setf (heap--vect heap) vec
+	  (heap--count heap) (length vec))
+    (while (>= (decf i) 0) (heap--sift-down heap i))
+    heap))
+
+
+(defun heap-merge (heap &rest heaps)
+  "Merge HEAP with remaining HEAPS.
+
+The merged heap takes the comparison function and resize-fector
+of the first HEAP argument.
+
+\(Note that in this heap implementation, the merge operation is
+not very efficient, taking O(n) time for combined heap size n\)."
+  (setq heaps (mapcar #'heap--vect heaps))
+  (heap-build (heap--cmpfun heap)
+	      (apply #'vconcat (heap--vect heap) heaps)
+	      (heap--resize heap)))
+
+
+(defun heap-clear (heap)
+  "Remove all entries from HEAP.
+
+Return number of entries removed."
+  (prog1
+      (heap--count heap)
+    (setf (heap--vect heap) (make-vector (length (heap--vect heap)) nil)
+          (heap--count heap) 0)))
+
+
+(heap--when-generators
+ (iter-defun heap-iter (heap)
+   "Return a heap iterator object.
+
+Calling `iter-next' on this object will retrieve the next element
+from the heap. The heap itself is not modified.
+
+\(Note that in this heap implementation, constructing a heap
+iterator is not very efficient, taking O(n) time for a heap of
+size n. Each call to `iter-next' on the other hand *is*
+efficient, taking O(log n) time.\)"
+   (let ((heap (heap-copy heap)))
+     (while (not (heap-empty heap))
+       (iter-yield (heap-delete-root heap))))))
+
+
+(provide 'heap)
+
+;;; heap.el ends here
+#+END_SRC
+
+#+BEGIN_SRC emacs-lisp :results silent 
+  (require 'cl)
+  (require 'heap)
+  
+  ; sum the weights of the nodes
+  (defun sum-weights (x y)
+    (+ (cdr x) (cdr y)))
+  ; builds the heap
+  (defun huffman-heap (tree-nodes)
+    (let ((tree (heap-build (lambda (x y) (< (cdr x) (cdr y))) tree-nodes))
+          (node nil)
+          (left nil)
+          (right nil))
+      (while (> (heap-size tree) 1)
+        (setq left (heap-delete-root tree)
+              right (heap-delete-root tree)
+              node (cons (list left right) (sum-weights left right)))
+        (heap-add tree node))
+      (heap-root tree)))
+#+END_SRC
+
+#+BEGIN_SRC elisp :results table
+  ; set a vector for the heap, including the frequencies
+  (setq vector '[(2 . 738597) (4 . 738717) (6 . 1297540) (8 . 566151) (10 . 729808) (12 . 920661) (14 . 503524) (16 . 371677) (18 . 667734) (20 . 354267) (22 . 307230) (24 . 453215) (26 . 211203) (28 . 229177) (30 . 398713) (32 . 123123) (34 . 129043) (36 . 206722) (38 . 94682) (40 . 111546) (42 . 159956) (44 . 64866) (46 . 54931) (48 . 93693) (50 . 52183) (52 . 38800) (54 . 64157) (56 . 32224) (58 . 27985) (60 . 55305) (62 . 16763) (64 . 17374) (66 . 30960) (68 . 12368) (70 . 17475) (72 . 17255) (74 . 8540) (76 . 7253) (78 . 13758) (80 . 6760) (82 . 4791) (84 . 9818) (86 . 3411) (88 . 3454) (90 . 7056) (92 . 2259) (94 . 2058) (96 . 3544) (98 . 1831) (100 . 1923) (102 . 2374) (104 . 1168) (106 . 933) (108 . 1634) (110 . 941) (112 . 711) (114 . 1125) (116 . 439) (118 . 433) (120 . 948) (122 . 287) (124 . 318) (126 . 533) (128 . 183) (130 . 211) (132 . 301) (134 . 128) (136 . 100) (138 . 210) (140 . 140) (142 . 90) (144 . 123) (146 . 46) (148 . 67) (150 . 94) (152 . 52) (154 . 43) (156 . 57) (158 . 19) (160 . 27) (162 . 27) (164 . 20) (166 . 9) (168 . 25) (170 . 18) (172 . 4) (174 . 10) (176 . 11) (178 . 12) (180 . 10) (182 . 5) (184 . 4) (186 . 3) (188 . 1) (190 . 1) (192 . 3) (194 . 1) (196 . 1) (198 . 6) (202 . 2) (204 . 3) (210 . 4) (220 . 1) (222 . 1)])
+  ; builds the huffman tree
+  (setq huffman-tree (huffman-heap vector)
+        left (first (car huffman-tree))
+        right (second (car huffman-tree))
+        check (list huffman-tree left right)
+  )
+#+END_SRC
+
+#+RESULTS:
+: ((((((((12 . 920661) (((24 . 453215) (((((40 . 111546) (((((((78 . 13758) (((((86 . 3411) (88 . 3454)) . 6865) (90 . 7056)) . 13921)) . 27679) (58 . 27985)) . 55664) (((66 . 30960) (((((((96 . 3544) (((((((116 . 439) (((130 . 211) (((((152 . 52) (((160 . 27) (((((198 . 6) (((186 . 3) (((((222 . 1) (220 . 1)) . 2) (202 . 2)) . 4)) . 7)) . 13) (((((184 . 4) (172 . 4)) . 8) (((210 . 4) (((((196 . 1) (194 . 1)) . 2) (((190 . 1) (188 . 1)) . 2)) . 4)) . 8)) . 16)) . 29)) . 56)) . 108) (144 . 123)) . 231)) . 442)) . 881) (106 . 933)) . 1814) (98 . 1831)) . 3645)) . 7189) (76 . 7253)) . 14442) (((((((((110 . 941) (120 . 948)) . 1889) (100 . 1923)) . 3812) (((94 . 2058) (((((126 . 533) (((((((156 . 57) (148 . 67)) . 124) (134 . 128)) . 252) (122 . 287)) . 539)) . 1072) (114 . 1125)) . 2197)) . 4255)) . 8067) (74 . 8540)) . 16607)) . 31049)) . 62009)) . 117673)) . 229219) (((32 . 123123) (((54 . 64157) (44 . 64866)) . 129023)) . 252146)) . 481365)) . 934580)) . 1855241) (((((14 . 503524) (8 . 566151)) . 1069675) (((((((34 . 129043) (((((56 . 32224) (((62 . 16763) (72 . 17255)) . 34018)) . 66242) (((((64 . 17374) (70 . 17475)) . 34849) (52 . 38800)) . 73649)) . 139891)) . 268934) (22 . 307230)) . 576164) (18 . 667734)) . 1243898)) . 2313573)) . 4168814) (((((6 . 1297540) (((((((42 . 159956) (((48 . 93693) (38 . 94682)) . 188375)) . 348331) (20 . 354267)) . 702598) (10 . 729808)) . 1432406)) . 2729946) (((((2 . 738597) (4 . 738717)) . 1477314) (((((16 . 371677) (30 . 398713)) . 770390) (((((((((((((((((92 . 2259) (102 . 2374)) . 4633) (82 . 4791)) . 9424) (84 . 9818)) . 19242) (((68 . 12368) (((((((104 . 1168) (((((132 . 301) (((140 . 140) (((((((170 . 18) (((166 . 9) (180 . 10)) . 19)) . 37) (((158 . 19) (164 . 20)) . 39)) . 76) (((154 . 43) (((((174 . 10) (((182 . 5) (((192 . 3) (204 . 3)) . 6)) . 11)) . 21) (((176 . 11) (178 . 12)) . 23)) . 44)) . 87)) . 163)) . 303)) . 604) (((124 . 318) (((128 . 183) (((142 . 90) (150 . 94)) . 184)) . 367)) . 685)) . 1289)) . 2457) (((((112 . 711) (((((((((146 . 46) (((168 . 25) (162 . 27)) . 52)) . 98) (136 . 100)) . 198) (138 . 210)) . 408) (118 . 433)) . 841)) . 1552) (108 . 1634)) . 3186)) . 5643) (80 . 6760)) . 12403)) . 24771)) . 44013) (50 . 52183)) . 96196) (((46 . 54931) (60 . 55305)) . 110236)) . 206432) (36 . 206722)) . 413154) (((26 . 211203) (28 . 229177)) . 440380)) . 853534)) . 1623924)) . 3101238)) . 5831184)) . 9999998) (((((12 . 920661) (((24 . 453215) (((((40 . 111546) (((((((78 . 13758) (((((86 . 3411) (88 . 3454)) . 6865) (90 . 7056)) . 13921)) . 27679) (58 . 27985)) . 55664) (((66 . 30960) (((((((96 . 3544) (((((((116 . 439) (((130 . 211) (((((152 . 52) (((160 . 27) (((((198 . 6) (((186 . 3) (((((222 . 1) (220 . 1)) . 2) (202 . 2)) . 4)) . 7)) . 13) (((((184 . 4) (172 . 4)) . 8) (((210 . 4) (((((196 . 1) (194 . 1)) . 2) (((190 . 1) (188 . 1)) . 2)) . 4)) . 8)) . 16)) . 29)) . 56)) . 108) (144 . 123)) . 231)) . 442)) . 881) (106 . 933)) . 1814) (98 . 1831)) . 3645)) . 7189) (76 . 7253)) . 14442) (((((((((110 . 941) (120 . 948)) . 1889) (100 . 1923)) . 3812) (((94 . 2058) (((((126 . 533) (((((((156 . 57) (148 . 67)) . 124) (134 . 128)) . 252) (122 . 287)) . 539)) . 1072) (114 . 1125)) . 2197)) . 4255)) . 8067) (74 . 8540)) . 16607)) . 31049)) . 62009)) . 117673)) . 229219) (((32 . 123123) (((54 . 64157) (44 . 64866)) . 129023)) . 252146)) . 481365)) . 934580)) . 1855241) (((((14 . 503524) (8 . 566151)) . 1069675) (((((((34 . 129043) (((((56 . 32224) (((62 . 16763) (72 . 17255)) . 34018)) . 66242) (((((64 . 17374) (70 . 17475)) . 34849) (52 . 38800)) . 73649)) . 139891)) . 268934) (22 . 307230)) . 576164) (18 . 667734)) . 1243898)) . 2313573)) . 4168814) (((((6 . 1297540) (((((((42 . 159956) (((48 . 93693) (38 . 94682)) . 188375)) . 348331) (20 . 354267)) . 702598) (10 . 729808)) . 1432406)) . 2729946) (((((2 . 738597) (4 . 738717)) . 1477314) (((((16 . 371677) (30 . 398713)) . 770390) (((((((((((((((((92 . 2259) (102 . 2374)) . 4633) (82 . 4791)) . 9424) (84 . 9818)) . 19242) (((68 . 12368) (((((((104 . 1168) (((((132 . 301) (((140 . 140) (((((((170 . 18) (((166 . 9) (180 . 10)) . 19)) . 37) (((158 . 19) (164 . 20)) . 39)) . 76) (((154 . 43) (((((174 . 10) (((182 . 5) (((192 . 3) (204 . 3)) . 6)) . 11)) . 21) (((176 . 11) (178 . 12)) . 23)) . 44)) . 87)) . 163)) . 303)) . 604) (((124 . 318) (((128 . 183) (((142 . 90) (150 . 94)) . 184)) . 367)) . 685)) . 1289)) . 2457) (((((112 . 711) (((((((((146 . 46) (((168 . 25) (162 . 27)) . 52)) . 98) (136 . 100)) . 198) (138 . 210)) . 408) (118 . 433)) . 841)) . 1552) (108 . 1634)) . 3186)) . 5643) (80 . 6760)) . 12403)) . 24771)) . 44013) (50 . 52183)) . 96196) (((46 . 54931) (60 . 55305)) . 110236)) . 206432) (36 . 206722)) . 413154) (((26 . 211203) (28 . 229177)) . 440380)) . 853534)) . 1623924)) . 3101238)) . 5831184))

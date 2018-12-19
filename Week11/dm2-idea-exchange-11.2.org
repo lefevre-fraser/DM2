@@ -1,0 +1,133 @@
+#+TITLE: DM2 Idea Exchange 11.2
+#+LANGUAGE: en
+#+OPTIONS: H:4 num:nil toc:nil \n:nil @:t ::t |:t ^:t *:t TeX:t LaTeX:t
+#+OPTIONS: html-postamble:nil
+#+STARTUP: showeverything
+#+SETUPFILE: theme-bigblow.setup
+
+  What does the following have to do with graph theory?
+
+* DONE Discuss The Dating Service Problem
+  CLOSED: [2018-11-29 Thu 17:05]
+  :LOGBOOK:
+  CLOCK: [2018-11-29 Thu 16:00]--[2018-11-29 Thu 17:04] =>  1:04
+  :END:
+  Suppose N boys and N girls join a dating service.
+
+  We write down an N-by-N matrix, where the (i, j) entry equals 1 if the ith boy
+  and the jth girl are willing to date each other, and 0 if they aren’t.
+
+  Is it possible to pair off every boy and girl with a willing partner?
+
+  Here’s a simple way to find out:
+
+  First rescale every row of the matrix to sum to 1.
+
+  Then rescale every column to sum to 1.
+
+  Then rescale every row, then rescale every column, and so on N^5 times.
+
+  If at the end of this scaling process, every row sum and every column sum is
+  between (inclusive) 1 - 1/N and 1 + 1/N, then it’s possible to pair off the
+  boys and girls; otherwise it isn’t.
+
+#+BEGIN_SRC elisp :results silent
+  (defun scale-list (lst)
+    (let ((sum (float (apply '+ lst))))
+      (if (zerop sum)
+          (error "no can do")
+        (mapcar (lambda (x) (/ x sum)) lst))))
+
+  (defun scale-rows (matrix)
+    (mapcar 'scale-list matrix))
+
+  (defun scale-columns (matrix)
+     (let ((transpose (apply 'mapcar* 'list matrix)))
+        (apply 'mapcar* 'list (scale-rows transpose))))
+
+  (defun dating-service (n matrix)
+    (or (and (= n (length matrix))
+             (every (lambda (row) (= n (length row))) matrix))
+        (error "bad parameters"))
+    (loop repeat (expt n 5)
+          do (setq matrix (scale-rows matrix)
+                   matrix (scale-columns matrix)))
+    matrix)
+#+END_SRC
+
+#+BEGIN_SRC elisp
+  (setq five-by-five '((0 1 0 1 0) (1 0 1 0 1) (0 1 1 0 0) (0 1 0 0 1) (0 0 1 1 1)))
+#+END_SRC
+
+#+RESULTS:
+| 0 | 1 | 0 | 1 | 0 |
+| 1 | 0 | 1 | 0 | 1 |
+| 0 | 1 | 1 | 0 | 0 |
+| 0 | 1 | 0 | 0 | 1 |
+| 0 | 0 | 1 | 1 | 1 |
+
+(/ 1.0 5)0.2
+#+BEGIN_SRC elisp :results raw
+  (setq results (dating-service 5 five-by-five)
+        rowcheck (loop for x in results
+                  collect (if (and (<= (- 1 .2) (apply '+ x)) (>= (+ 1 .2) (apply '+ x))) t nil))
+        colcheck (list (let ((n (apply '+ (first results)))) (if (and (<= (- 1 .2) n) (>= (+ 1 .2) n)) t nil))
+                       (let ((n (apply '+ (second results)))) (if (and (<= (- 1 .2) n) (>= (+ 1 .2) n)) t nil))
+                       (let ((n (apply '+ (third results)))) (if (and (<= (- 1 .2) n) (>= (+ 1 .2) n)) t nil))
+                       (let ((n (apply '+ (fourth results)))) (if (and (<= (- 1 .2) n) (>= (+ 1 .2) n)) t nil))
+                       (let ((n (apply '+ (fifth results)))) (if (and (<= (- 1 .2) n) (>= (+ 1 .2) n)) t nil))))
+
+  (list rowcheck colcheck)
+#+END_SRC
+
+#+RESULTS:
+((t t t t t) (t t t t t))
+
+* DONE Demonstrate Your Understanding
+  CLOSED: [2018-11-29 Thu 20:59]
+  :LOGBOOK:
+  CLOCK: [2018-11-29 Thu 20:00]--[2018-11-29 Thu 20:59] =>  0:59
+  :END:
+
+(print-table '((G1 G2 G3 G4 G5)(-) (0 1 0 1 0) (1 0 1 0 1) (0 1 1 0 0) (0 1 0 0 1) (0 0 1 1 1)))
+|    | G1 | G2 | G3 | G4 | G5 |
+|----+----+----+----+----+----|
+| B1 |  0 |  1 |  0 |  1 |  0 |
+| B2 |  1 |  0 |  1 |  0 |  1 |
+| B3 |  0 |  1 |  1 |  0 |  0 |
+| B4 |  0 |  1 |  0 |  0 |  1 |
+| B5 |  0 |  0 |  1 |  1 |  1 |
+
+  How does this work? Can you explain it?!
+*** An approach to a Solution
+    The table can be used to make a list of adjacencies which represent a graph
+
+:LIST_OF_ADJACENCIES:
+:           (B1 G2 G4) 
+:           (B2 G1 G3 G5) 
+:           (B3 G2 G3) 
+:           (B4 G2 G5) 
+:           (B5 G3 G4 G5)
+:                        
+:           (G1 B2)
+:           (G2 B1 B3 B4)
+:           (G3 B2 B3 B5)
+:           (G4 B1 B5)  
+:           (G5 B2 B4 B5)
+:END:
+
+:ONE_POSSIBLE_SOLUTION_TO_THE_ABOVE_PROBLEM_USING_THE_ADJACENCY_LIST:                   
+:           |B1      |B2       |B3       |B4        |B5
+:           |        |         |         |          |
+:           +--------|---------|---------|--+       |
+:                    |  +------+         +--|-------|--+ 
+:              +-----+  |         +---------|-------+  | 
+:              |        |         |         |          |
+:            G1|      G2|       G3|       G4|        G5|
+:END:
+
+  Some evidence of experimentation is required for full credit.
+
+  First post your answer.
+
+  Then post on two other students' answers.

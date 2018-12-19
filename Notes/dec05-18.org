@@ -1,0 +1,103 @@
+#+BEGIN_SRC elisp
+  ;; V = { S A B } T = {a, b} Find the 
+
+
+  ;; S \rarr AB
+  ;; A \rarr ab
+  ;; B \rarr bb
+#+END_SRC
+
+abbb
+
+#+BEGIN_SRC elisp
+  ;; V = { S A B } T = {a, b} Find the 
+
+
+  ;; S \rarr AB
+  ;; S \rarr aA
+  ;; A \rarr a
+  ;; B \rarr ba
+#+END_SRC
+
+AB
+aba
+
+aA
+aa
+
+aba
+aa
+
+#+BEGIN_SRC elisp
+  ;; V = { S A B } T = {a, b} Find the 
+
+
+  ;; S \rarr AB
+  ;; S \rarr AA
+  ;; A \rarr aB
+  ;; A \rarr ab
+  ;; B \rarr b
+#+END_SRC
+
+AB
+aBb
+abb
+
+AB
+abb
+
+AA
+aBaB
+abab
+
+AA
+aBab
+abab
+
+AA
+abaB
+abab
+
+
+#+BEGIN_SRC elisp
+  ;; V = { S A B } T = {a, b} Find the 
+
+
+  ;; S \rarr AA
+  ;; S \rarr B
+  ;; A \rarr aaA
+  ;; A \rarr aa
+  ;; B \rarr bB
+  ;; B \rarr b
+#+END_SRC
+
+AA
+aaAaaA
+aaAaaAaaAaaA......
+aaaaaaaaaaaaaaaaa....
+
+AA
+aa
+
+B
+bB
+bbB
+bbbB
+
+B
+b
+
+
+* Phrase Structure Grammar
+** 1 {ab^2n | n >= 0}
+   S \rarr AB
+   A \rarr aB
+   B \rarr bbB
+   B \rarr bb
+   B \rarr \lambda
+
+** {a^{n}b^2n | n >= 0}
+   S \rarr aSbb
+   S \rarr \lambda
+
+** 

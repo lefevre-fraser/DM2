@@ -1,0 +1,55 @@
+
+
+
+
+
+
+
+(defun kids-ages (num sum prod)
+  (loop for
+
+#+BEGIN_SRC elisp
+  (list 4 5 6 )
+#+END_SRC
+
+
+(defun truth-table-create (vars &rest names)
+  (let* 
+    ((modding 1)
+     (cols (loop for y from 1 to vars 
+             collect
+              (loop for x from 0 to (1- (expt 2 vars)) by (* modding 2)
+                collect (append (make-list modding 0) (make-list modding 1)))
+             do (setq modding (* modding 2))))
+     (cols (loop for x in cols
+             collect (apply 'append x)))
+     (rows (apply 'mapcar* 'list (reverse cols))))
+    (if (> (length names) 0) (append (append names (list (make-list vars "-"))) rows) rows)
+  )
+)
+
+(truth-table-create 3)
+#+BEGIN_SRC elisp
+  (truth-table-create 4 '(a b c d out))
+#+END_SRC
+
+#+RESULTS:
+| a | b | c | d | out |
+| - | - | - | - |     |
+| 0 | 0 | 0 | 0 |     |
+| 0 | 0 | 0 | 1 |     |
+| 0 | 0 | 1 | 0 |     |
+| 0 | 0 | 1 | 1 |     |
+| 0 | 1 | 0 | 0 |     |
+| 0 | 1 | 0 | 1 |     |
+| 0 | 1 | 1 | 0 |     |
+| 0 | 1 | 1 | 1 |     |
+| 1 | 0 | 0 | 0 |     |
+| 1 | 0 | 0 | 1 |     |
+| 1 | 0 | 1 | 0 |     |
+| 1 | 0 | 1 | 1 |     |
+| 1 | 1 | 0 | 0 |     |
+| 1 | 1 | 0 | 1 |     |
+| 1 | 1 | 1 | 0 |     |
+| 1 | 1 | 1 | 1 |     |
+

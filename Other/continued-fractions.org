@@ -1,0 +1,147 @@
+#+TITLE: Continued Fractions 
+#+LANGUAGE: en
+#+OPTIONS:  H:4 num:nil toc:nil \n:nil @:t ::t |:t ^:t *:t TeX:t LaTeX:t
+#+STARTUP:  showeverythingNOT entitiespretty
+
+* An Ancient Fascination
+  https://en.wikipedia.org/wiki/Continued_fraction
+* Sample Code
+#+BEGIN_SRC elisp :results silent
+  (defun numerator (frac)
+    (car frac))
+
+  (defun denominator (frac)
+    (cdr frac))
+
+  (defun frac-eval (frac)
+    (/ (float (numerator frac))
+       (float (denominator frac))))
+
+  (defun flipover (x)
+    (and (consp x) (cons (cdr x) (car x))))
+
+  (defun oneover (x)
+    (if (numberp x)
+        (/ 1.0 x)
+      (flipover x)))
+
+  (defun plus (a c)
+    (if (and (numberp a) (numberp c))
+        (+ a c)
+      (cons (+ (car c) (* a (cdr c))) (cdr c))))
+
+  (defun continued-fraction-of-frac (frac)
+    (let* ((n (numerator frac))
+           (d (denominator frac)))
+      (unless (zerop d)
+        (cons (/ n d)
+              (continued-fraction-of-frac (cons d (% n d)))))))
+
+  (defun continued-fraction-of-float-with-iterations (n iterations)
+    (let* ((next-coefficient (floor n))
+           (difference (- n next-coefficient)))
+      (if (or (zerop difference) (<= iterations 0))
+          (and (zerop difference) (list next-coefficient))
+        (cons next-coefficient
+              (continued-fraction-of-float-with-iterations
+               (/ 1 difference) (1- iterations))))))
+
+  (defun list-continued-fraction (cf)
+    (if (null cf) 
+        (list 'cons 1 0)
+      (list 'plus (first cf)
+            (list 'oneover
+                  (list-continued-fraction (rest cf))))))
+
+  (defun eval-continued-fraction (cf)
+    (eval (list-continued-fraction cf)))
+#+END_SRC
+
+#+BEGIN_SRC elisp :results raw
+  (continued-fraction-of-float-with-iterations (/ 899 493.0) 6)
+#+END_SRC
+
+#+RESULTS:
+(1 1 4 1 1 1)
+(1 1 4 1 1 1 46912496118442)
+(1 1 4 1 1 1 46912496118442 1 1 1)
+
+#+BEGIN_SRC elisp :results code 
+  (list-continued-fraction '(1 1 4 1 1 1))
+#+END_SRC
+
+#+RESULTS:
+#+BEGIN_SRC elisp
+(plus 1
+      (oneover
+       (plus 1
+             (oneover
+              (plus 4
+                    (oneover
+                     (plus 1
+                           (oneover
+                            (plus 1
+                                  (oneover
+                                   (plus 1
+                                         (oneover
+                                          (cons 1 0)))))))))))))
+#+END_SRC
+
+#+RESULTS:
+: (31 . 17)
+
+#+BEGIN_SRC elisp :results raw
+  (- (/ 899 493.0) (/ 31 17.0))
+#+END_SRC
+
+#+RESULTS:
+0.0
+(1.8235294117647058 1.8235294117647058)
+
+#+BEGIN_SRC elisp :results value
+  (trace-gcd 899 493)
+#+END_SRC
+
+#+RESULTS:
+| 899 | = | 493 | (1) | + | 406 |
+| 493 | = | 406 | (1) | + |  87 |
+| 406 | = |  87 | (4) | + |  58 |
+|  87 | = |  58 | (1) | + |  29 |
+|  58 | = |  29 | (2) | + |   0 |
+
+#+BEGIN_SRC elisp :results raw
+  (continued-fraction-of-frac '(89 . 56))
+#+END_SRC
+
+#+RESULTS:
+(1 1 1 2 3 3)
+
+#+BEGIN_SRC elisp :results silent
+  (defun trace-gcd (a b)
+     (loop with r = -1
+           until (zerop r)
+           collect (list a '= b (list (/ a b)) '+ (setq r (% a b)))
+           do (setq a b b r)))
+#+END_SRC
+
+#+BEGIN_SRC elisp :results value
+  (trace-gcd 89 56)
+#+END_SRC
+
+#+RESULTS:
+| 89 | = | 56 | (1) | + | 33 |
+| 56 | = | 33 | (1) | + | 23 |
+| 33 | = | 23 | (1) | + | 10 |
+| 23 | = | 10 | (2) | + |  3 |
+| 10 | = |  3 | (3) | + |  1 |
+|  3 | = |  1 | (3) | + |  0 |
+
+** Calculate and Improve
+
+   The above code can theoretically give you the first few partial quotients
+   (coefficients) of the /continued fraction representation/ (CFR) of any
+   positive rational or irrational number. Find and compare the CFRs of the
+   square root of 2 =(sqrt 2.0)= and the rational number \(\frac{1393}{985}\).
+
+   Suggest improvements to this code.
+

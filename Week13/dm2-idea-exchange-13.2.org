@@ -1,0 +1,64 @@
+#+TITLE: DM2 Idea Exchange 13.2
+#+LANGUAGE: en
+#+OPTIONS: H:4 num:nil toc:nil \n:nil @:t ::t |:t ^:t *:t TeX:t LaTeX:t
+#+OPTIONS: html-postamble:nil
+#+STARTUP: showeverything
+#+SETUPFILE: theme-bigblow.setup
+
+  With your freshly heightened awareness of the ramifications of bumping your
+  head against abstraction ceilings, a look back at some major course topics (as
+  touched on in the paper on G\ouml{}del Hashes by Matt Might and two of his students)
+  will reveal how strong you have become.
+
+* TODO Discuss What You Learned
+  Finish reading the paper you started reading the first week of the semester:
+  http://matt.might.net/papers/liang2014godel.pdf
+
+  Discuss three specific things you learned from this paper. Do a little
+  research on and include lattices in your discussion.
+** Three Things I Learned
+  1. Section III. Sets
+     Sets\mdash\mdash^{}unordered collections of elements\mdash\mdash^{}abound in functional (and non-functional)
+     programming. For set-intensive applications, performance hinges on two factors (1) the
+     space-efficiency of the underlying data structure and (2) the time-efficiency of 
+     operations on such structures: membership testing, inclusion testing, intersection,
+     insertion, union, deletion, and difference. A G\ouml^{}del strategy for encoding sets delivers
+     pragmatic efficiency in both dimensions.
+
+     It is really intriguing to me the thought of being able to have a perfect
+     one-to-one mapping such that you can map all words or items into an array
+     without having to sacrifice time.
+     
+  2. Section III. Sets
+     To construct the G\ouml^{}del encoding of a set, first assume that every potential element
+     has been assigned a unique prime number; then compute the product of the primes assigned
+     to each element; the result is the G\ouml^{}del hash of the set. It is not necessary to 
+     pre-construct the assignment from elements to primes: new elements may be assigned 
+     fresh primmes as they are encountered for the first time.
+
+     While it is already great that you can create a perfect has with a given set.
+     What is really great about G\ouml^{}del hashes is the ability to account for 
+     objects that are to be inserted that don't yet exist int the universe of the
+     map. You simply assign the new character a prime number and then any 
+     string sequence that contains it will also have a unique index from any other hash.
+
+  3. Conclusion
+     G\ouml^{}del hashes are perfect and order-preserving yet still dynamic, structural
+     and incremental; G\ouml^{}del hashes are not minimal, but they are compact.
+
+     It is so cool how G\ouml^{}del hashes are dynamic and compact. Most times those two
+     attributes will conflict with one another, but the G\ouml^{}del hash works in 
+     such a way that it can take advantage of both.
+
+** Lattices
+  - Deffinition: According to Google
+    A structure consisting of strips of wood or metal crossed and fastened together
+    with square or diamond-shaped spaces left between, used typically as a screen or
+    fence or as a support for climbing plants.
+    - An interlaced structure or patern resembling this
+    - A regular repeated three-dimensional arrangement of atoms, ions, or molecules
+      in a metal or crystaline solid
+
+  First post your response.
+
+  Then post on two other students' responses.

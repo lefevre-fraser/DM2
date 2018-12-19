@@ -1,0 +1,639 @@
+#+TITLE: Yahtzee Analysis
+#+AUTHOR: Rick Neff
+#+EMAIL:  NeffR@byui.edu 
+#+LANGUAGE:  en
+#+OPTIONS:   H:4 num:nil toc:nil \n:nil @:t ::t |:t ^:t *:t TeX:t LaTeX:t
+#+STARTUP: showeverything
+
+* Simplifying Assumptions
+
+  - Each number is equally likely
+  - Roll five dice one time only
+  - No distinction between Large Straight and Small Straight
+
+* Categorize 8 Possible Results
+
+** 1st
+  "Yahtzee" = Five of a kind (11111, 22222, 33333, 44444, 55555, 66666)
+** 2nd
+   Four of a kind
+** 3rd
+   Straight (12345 or 23456)
+** 4th
+   Full house (33366, 11444, etc.)
+** 5th
+   Three of a kind
+** 6th
+   Two Pair
+** 7th
+   One Pair
+** 8th
+   Junk
+
+* How Many?
+
+  How many different (unique) results of rolling five dice are there?
+
+** One Way
+
+   (10 choose 5) = 10!/5!5!
+
+*** Calculation
+
+#+BEGIN_SRC elisp :results silent
+  (defun fact (n)
+    (if (<= n 0)
+        1
+      (* n (fact (- n 1)))))
+#+END_SRC
+
+#+BEGIN_SRC elisp
+   (/ (* 10 9 8 7 6) (* 5 4 3 2 1))
+#+END_SRC
+
+** Another Way
+
+   6^5
+
+*** Calculation
+
+#+BEGIN_SRC elisp
+  (setq total (* 6 6 6 6 6))
+#+END_SRC
+
+* Analysis
+
+** Yahtzee
+
+*** Model
+
+    Enumerate
+
+**** 6 Events
+
+      11111, 22222, 33333, 44444, 55555, 66666
+
+***** Calculation
+
+#+BEGIN_SRC elisp
+  (let* ((num-events 6)
+         (probability-of-outcome (/ num-events (float total))))
+    (format "P(Yahtzee) = %d/%d = %2.5f" num-events total probability-of-outcome))
+#+END_SRC
+
+
+** Four of a Kind
+
+   E.g., 22221, 33343, 55655, etc.
+
+*** Model 
+
+   Choose where the one different die goes.
+
+   (5 choose 1)
+
+**** Patterns
+
+     =aaaab, aaaba, aabaa, abaaa, baaaa=
+
+***** Calculation
+
+      Multiplication Principle
+
+#+BEGIN_SRC elisp
+  (let* ((num-patterns 5)
+         (num-choices-for-a 6)
+         (num-choices-for-b (- num-choices-for-a 1))
+         (num-total (* num-patterns num-choices-for-a num-choices-for-b))
+         (probability-of-outcome (/ num-total (float total))))
+    (format "P(Four of a Kind) = %d/%d = %2.5f" num-total total probability-of-outcome))
+#+END_SRC
+
+
+** Straight
+
+*** Model
+
+    Sum Rule
+
+**** Patterns
+
+     2 patterns (12345 or 23456)
+
+****** Calculation
+
+       5! permutations of each pattern
+
+#+BEGIN_SRC elisp
+  (let* ((num-patterns 2)
+         (num-permutations-per-pattern (* 5 4 3 2 1))
+         (num-total (* num-patterns num-permutations-per-pattern))
+         (probability-of-outcome (/ num-total (float total))))
+    (format "P(Straight) = %d/%d = %2.5f" num-total total probability-of-outcome))
+#+END_SRC
+
+
+** Full House
+
+*** Model
+
+    Product Rule
+
+**** Patterns
+
+     Choose where the pair goes:
+
+     =aaabb, aabab, aabba, ababa, babaa, bbaaa, abbaa, abaab, baaab, baaba=
+
+     That's (5 choose 2) = 5!/2!3! = 10 patterns.
+
+***** Calculation
+
+#+BEGIN_SRC elisp
+  (let* ((num-patterns 10)
+         (num-choices-for-a 6)
+         (num-choices-for-b (- num-choices-for-a 1))
+         (num-total (* num-patterns num-choices-for-a num-choices-for-b))
+         (probability-of-outcome (/ num-total (float total))))
+    (format "P(Full House) = %d/%d = %2.5f" num-total total probability-of-outcome))
+#+END_SRC
+
+
+** Three of a Kind
+
+*** Model
+
+    Product Rule
+
+**** Patterns
+
+     Choose where the triple goes:
+
+     =aaabc, aabac, aabca, abaac, abaca, abcaa, baaac, baaca, bacaa, bcaaa=
+
+     That's (5 choose 3) = 5!/3!2! = 10 patterns.
+
+***** Calculation
+
+#+BEGIN_SRC elisp
+  (let* ((num-patterns 10)
+         (num-choices-for-a 6)
+         (num-choices-for-b (- num-choices-for-a 1))
+         (num-choices-for-c (- num-choices-for-b 1))
+         (num-total (* num-patterns num-choices-for-a num-choices-for-b num-choices-for-c))
+         (probability-of-outcome (/ num-total (float total))))
+    (format "P(Three of a Kind) = %d/%d = %2.5f" num-total total probability-of-outcome))
+#+END_SRC
+
+
+** Two Pair
+
+*** Model
+
+    What is the model of choice here?
+
+***** Patterns
+
+      =aabbc, ababc, abbac, aabcb, abacb, abbca, aacbb, abcab, abcba, acabb,
+      acbab, acbba, caabb, cabab, cabba=
+
+***** Calculation
+
+      Shouldn't that be 5!/2!2! = 30 patterns?
+
+      I.e., add
+
+      =bbaac, babac, baabc, bbaca, babca, baacb, bbcaa, bacba, bacab, bcbaa,
+      bcaba, bcaab, cbbaa, cbaba, cbaab=
+
+******* Why Not?
+
+	Because of symmetry, 30 is twice too many!
+
+
+#+BEGIN_SRC elisp
+  (let* ((num-patterns (/ 30 2))
+         (num-choices-for-a 6)
+         (num-choices-for-b (- num-choices-for-a 1))
+         (num-choices-for-c (- num-choices-for-b 1))
+         (num-total (* num-patterns num-choices-for-a num-choices-for-b num-choices-for-c))
+         (probability-of-outcome (/ num-total (float total))))
+    (format "P(Two Pair) = %d/%d = %2.5f" num-total total probability-of-outcome))
+#+END_SRC
+
+
+** One Pair
+
+*** Model
+
+    Product Rule
+
+**** Patterns
+
+     Two the same, the other three different
+
+     =aabcd=, etc.
+
+****** Calculation
+
+       (5 choose 2) = 5!/2!3! = 10 patterns
+
+#+BEGIN_SRC elisp
+  (let* ((num-patterns 10)
+         (num-choices-for-a 6)
+         (num-choices-for-b (- num-choices-for-a 1))
+         (num-choices-for-c (- num-choices-for-b 1))
+         (num-choices-for-d (- num-choices-for-c 1))
+         (num-total (* num-patterns num-choices-for-a num-choices-for-b num-choices-for-c num-choices-for-d))
+         (probability-of-outcome (/ num-total (float total))))
+    (format "P(One Pair) = %d/%d = %2.5f" num-total total probability-of-outcome))
+#+END_SRC
+
+#+RESULTS:
+: P(One Pair) = 3600/7776 = 0.46296
+
+
+** Junk
+
+*** Model
+
+    - No duplicates.
+    - Not a Straight.
+
+**** Patterns
+
+     Permutations of 12346, 12356, 12456, 13456
+
+****** Calculation
+
+       Each pattern has 5! permutations:
+
+#+BEGIN_SRC elisp
+  (let* ((num-patterns 4)
+         (num-permutations-per-pattern (* 5 4 3 2 1))
+         (num-total (* num-patterns num-permutations-per-pattern))
+         (probability-of-outcome (/ num-total (float total))))
+    (format "P(Junk) = %d/%d = %2.5f" num-total total probability-of-outcome))
+#+END_SRC
+
+
+** Tabulation
+
+| Roll            | Probability |
+|-----------------+-------------|
+| Yahtzee         |     0.00077 |
+| Four of a Kind  |     0.01929 |
+| Straight        |     0.03086 |
+| Full House      |     0.03858 |
+| Three of a Kind |     0.15432 |
+| Two Pair        |     0.23148 |
+| One Pair        |     0.46296 |
+| Junk            |     0.06172 |
+|                 |             |
+| SUM             |     0.99998 |
+
+*** SUM
+
+    0.99998 = 1 (for all practical purposes)
+
+
+** Tabulation Again
+
+| Roll            | Probability | = Exactly |
+|-----------------+-------------+-----------|
+| Yahtzee         |     0.00077 |    6/7776 |
+| Four of a Kind  |     0.01929 |  150/7776 |
+| Straight        |     0.03086 |  240/7776 |
+| Full House      |     0.03858 |  300/7776 |
+| Three of a Kind |     0.15432 | 1200/7776 |
+| Two Pair        |     0.23148 | 1800/7776 |
+| One Pair        |     0.46296 | 3600/7776 |
+| Junk            |     0.06172 |  480/7776 |
+|                 |             |           |
+| SUM             |     0.99998 | 7776/7776 |
+
+
+*** SUM
+
+    7776/7776 = 1 (for all practical *and* theoretical purposes).
+
+* Correct Analysis
+  Google 'Twelvefold Way of Combinatorics'. Multichoosing (combinations with
+  repetition) are of particular interest.
+
+0 1 2 3 4 5 6 7 8 9
+| * | * | * * | * |  = 2 3 4 4 5 = which dice
+_ _ _ _ _ _ _ _ _ _  = 1 3 5 6 8 = positions of stars
+
+  The question is: How do we convert from the 'positions of stars' (below) to
+  the 'which dice' representation?
+
+#+BEGIN_SRC elisp :results silent
+ (defun generate-subsets (all-values)
+   (if (null all-values)
+       (list nil)
+     (let ((first-element (first all-values))
+           (selected-values (generate-subsets (rest all-values))))
+       (append selected-values
+               (mapcar (lambda (subset)
+                         (cons first-element subset))
+                       selected-values)))))
+
+#+END_SRC
+
+Here are the (10 choose 5) = 252 subsets of length 5 of the digits 0-9, which
+represent the (6 multichoose 5) = (10 choose 5) = 252 ways to roll 5 dice:
+
+#+BEGIN_SRC elisp :results code
+  (setq all-subsets (generate-subsets '(0 1 2 3 4 5 6 7 8 9))
+        length-five-subsets (remove-if-not (lambda (x) (= (length x) 5)) all-subsets))
+#+END_SRC
+
+#+BEGIN_SRC elisp :results silent
+  (defun generate-dice-roll (subset)
+    (let ((sab (make-string 10 ?|)))
+      (loop for position in subset
+            do (aset sab position ?*))
+      (loop with num-bars = 0
+            with counts = (make-vector 6 0)
+            for i from 0 to 9
+            do (let ((cur (aref sab i)))
+                 (if (= ?| cur) (setq num-bars (1+ num-bars)))
+                 (if (= ?* cur)
+                     (aset counts num-bars (1+ (aref counts num-bars)))))
+            finally return counts)))
+#+END_SRC
+
+#+BEGIN_SRC elisp :results output
+  (loop for subset in length-five-subsets
+        do (princ (format "%s --> %s\n" subset (generate-dice-roll subset))))
+#+END_SRC
+
+  The first column in the table below was generated by the above code.
+
+  The last two columns in this table were added by hand. How would you
+  write elisp to do it automatically?
+
+| (5 6 7 8 9) --> [0 0 0 0 0 5] | 66666 | Yahtzee   |
+| (4 6 7 8 9) --> [0 0 0 0 1 4] | 56666 | 4ofKind   |
+| (4 5 7 8 9) --> [0 0 0 0 2 3] | 55666 | FullHouse |
+| (4 5 6 8 9) --> [0 0 0 0 3 2] | 55566 | FullHouse |
+| (4 5 6 7 9) --> [0 0 0 0 4 1] | 55556 | 4ofKind   |
+| (4 5 6 7 8) --> [0 0 0 0 5 0] | 55555 | Yahtzee   |
+| (3 6 7 8 9) --> [0 0 0 1 0 4] | 46666 | 4ofKind   |
+| (3 5 7 8 9) --> [0 0 0 1 1 3] | 45666 | 3ofKind   |
+| (3 5 6 8 9) --> [0 0 0 1 2 2] | 45566 | TwoPair   |
+| (3 5 6 7 9) --> [0 0 0 1 3 1] | 45556 | 3ofKind   |
+| (3 5 6 7 8) --> [0 0 0 1 4 0] | 45555 | 4ofKind   |
+| (3 4 7 8 9) --> [0 0 0 2 0 3] | 44666 | FullHouse |
+| (3 4 6 8 9) --> [0 0 0 2 1 2] | 44566 | TwoPair   |
+| (3 4 6 7 9) --> [0 0 0 2 2 1] | 44556 | TwoPair   |
+| (3 4 6 7 8) --> [0 0 0 2 3 0] | 44555 | FullHouse |
+| (3 4 5 8 9) --> [0 0 0 3 0 2] | 44466 | FullHouse |
+| (3 4 5 7 9) --> [0 0 0 3 1 1] | 44456 | 3ofKind   |
+| (3 4 5 7 8) --> [0 0 0 3 2 0] | 44455 | FullHouse |
+| (3 4 5 6 9) --> [0 0 0 4 0 1] | 44446 | 4ofKind   |
+| (3 4 5 6 8) --> [0 0 0 4 1 0] | 44445 | 4ofKind   |
+| (3 4 5 6 7) --> [0 0 0 5 0 0] | 44444 | Yahtzee   |
+| (2 6 7 8 9) --> [0 0 1 0 0 4] | 36666 | 4ofKind   |
+| (2 5 7 8 9) --> [0 0 1 0 1 3] | 35666 | 3ofKind   |
+| (2 5 6 8 9) --> [0 0 1 0 2 2] | 35566 | TwoPair   |
+| (2 5 6 7 9) --> [0 0 1 0 3 1] | 35556 | 3ofKind   |
+| (2 5 6 7 8) --> [0 0 1 0 4 0] | 35555 | 4ofKind   |
+| (2 4 7 8 9) --> [0 0 1 1 0 3] | 34666 | 3ofKind   |
+| (2 4 6 8 9) --> [0 0 1 1 1 2] | 34566 | OnePair   |
+| (2 4 6 7 9) --> [0 0 1 1 2 1] | 34556 | OnePair   |
+| (2 4 6 7 8) --> [0 0 1 1 3 0] | 34555 | 3ofKind   |
+| (2 4 5 8 9) --> [0 0 1 2 0 2] | 34466 | TwoPair   |
+| (2 4 5 7 9) --> [0 0 1 2 1 1] | 34456 | OnePair   |
+| (2 4 5 7 8) --> [0 0 1 2 2 0] | 34455 | TwoPair   |
+| (2 4 5 6 9) --> [0 0 1 3 0 1] | 34446 | 3ofKind   |
+| (2 4 5 6 8) --> [0 0 1 3 1 0] | 34445 | 3ofKind   |
+| (2 4 5 6 7) --> [0 0 1 4 0 0] | 34444 | 4ofKind   |
+| (2 3 7 8 9) --> [0 0 2 0 0 3] | 33666 | FullHouse |
+| (2 3 6 8 9) --> [0 0 2 0 1 2] | 33566 | TwoPair   |
+| (2 3 6 7 9) --> [0 0 2 0 2 1] | 33556 | TwoPair   |
+| (2 3 6 7 8) --> [0 0 2 0 3 0] | 33555 | FullHouse |
+| (2 3 5 8 9) --> [0 0 2 1 0 2] | 33466 | TwoPair   |
+| (2 3 5 7 9) --> [0 0 2 1 1 1] | 33456 | OnePair   |
+| (2 3 5 7 8) --> [0 0 2 1 2 0] | 33455 | TwoPair   |
+| (2 3 5 6 9) --> [0 0 2 2 0 1] | 33446 | TwoPair   |
+| (2 3 5 6 8) --> [0 0 2 2 1 0] | 33445 | TwoPair   |
+| (2 3 5 6 7) --> [0 0 2 3 0 0] | 33444 | FullHouse |
+| (2 3 4 8 9) --> [0 0 3 0 0 2] | 33366 | FullHouse |
+| (2 3 4 7 9) --> [0 0 3 0 1 1] | 33356 | 3ofKind   |
+| (2 3 4 7 8) --> [0 0 3 0 2 0] | 33355 | FullHouse |
+| (2 3 4 6 9) --> [0 0 3 1 0 1] | 33346 | 3ofKind   |
+| (2 3 4 6 8) --> [0 0 3 1 1 0] | 33345 | 3ofKind   |
+| (2 3 4 6 7) --> [0 0 3 2 0 0] | 33344 | FullHouse |
+| (2 3 4 5 9) --> [0 0 4 0 0 1] | 33336 | 4ofKind   |
+| (2 3 4 5 8) --> [0 0 4 0 1 0] | 33335 | 4ofKind   |
+| (2 3 4 5 7) --> [0 0 4 1 0 0] | 33334 | 4ofKind   |
+| (2 3 4 5 6) --> [0 0 5 0 0 0] | 33333 | Yahtzee   |
+| (1 6 7 8 9) --> [0 1 0 0 0 4] | 26666 | 4ofKind   |
+| (1 5 7 8 9) --> [0 1 0 0 1 3] | 25666 | 3ofKind   |
+| (1 5 6 8 9) --> [0 1 0 0 2 2] | 25566 | TwoPair   |
+| (1 5 6 7 9) --> [0 1 0 0 3 1] | 25556 | 3ofKind   |
+| (1 5 6 7 8) --> [0 1 0 0 4 0] | 25555 | 4ofKind   |
+| (1 4 7 8 9) --> [0 1 0 1 0 3] | 24666 | 3ofKind   |
+| (1 4 6 8 9) --> [0 1 0 1 1 2] | 24566 | OnePair   |
+| (1 4 6 7 9) --> [0 1 0 1 2 1] | 24556 | OnePair   |
+| (1 4 6 7 8) --> [0 1 0 1 3 0] | 24555 | 3ofKind   |
+| (1 4 5 8 9) --> [0 1 0 2 0 2] | 24466 | TwoPair   |
+| (1 4 5 7 9) --> [0 1 0 2 1 1] | 24456 | OnePair   |
+| (1 4 5 7 8) --> [0 1 0 2 2 0] | 24455 | TwoPair   |
+| (1 4 5 6 9) --> [0 1 0 3 0 1] | 24446 | 3ofKind   |
+| (1 4 5 6 8) --> [0 1 0 3 1 0] | 24445 | 3ofKind   |
+| (1 4 5 6 7) --> [0 1 0 4 0 0] | 24444 | 4ofKind   |
+| (1 3 7 8 9) --> [0 1 1 0 0 3] | 23666 | 3ofKind   |
+| (1 3 6 8 9) --> [0 1 1 0 1 2] | 23566 | OnePair   |
+| (1 3 6 7 9) --> [0 1 1 0 2 1] | 23556 | OnePair   |
+| (1 3 6 7 8) --> [0 1 1 0 3 0] | 23555 | 3ofKind   |
+| (1 3 5 8 9) --> [0 1 1 1 0 2] | 23466 | OnePair   |
+| (1 3 5 7 9) --> [0 1 1 1 1 1] | 23456 | Straight  |
+| (1 3 5 7 8) --> [0 1 1 1 2 0] | 23455 | OnePair   |
+| (1 3 5 6 9) --> [0 1 1 2 0 1] | 23446 | OnePair   |
+| (1 3 5 6 8) --> [0 1 1 2 1 0] | 23445 | OnePair   |
+| (1 3 5 6 7) --> [0 1 1 3 0 0] | 23444 | 3ofKind   |
+| (1 3 4 8 9) --> [0 1 2 0 0 2] | 23366 | TwoPair   |
+| (1 3 4 7 9) --> [0 1 2 0 1 1] | 23356 | OnePair   |
+| (1 3 4 7 8) --> [0 1 2 0 2 0] | 23355 | TwoPair   |
+| (1 3 4 6 9) --> [0 1 2 1 0 1] | 23346 | OnePair   |
+| (1 3 4 6 8) --> [0 1 2 1 1 0] | 23345 | OnePair   |
+| (1 3 4 6 7) --> [0 1 2 2 0 0] | 23344 | TwoPair   |
+| (1 3 4 5 9) --> [0 1 3 0 0 1] | 23336 | 3ofKind   |
+| (1 3 4 5 8) --> [0 1 3 0 1 0] | 23335 | 3ofKind   |
+| (1 3 4 5 7) --> [0 1 3 1 0 0] | 23334 | 3ofKind   |
+| (1 3 4 5 6) --> [0 1 4 0 0 0] | 23333 | 4ofKind   |
+| (1 2 7 8 9) --> [0 2 0 0 0 3] | 22666 | FullHouse |
+| (1 2 6 8 9) --> [0 2 0 0 1 2] | 22566 | TwoPair   |
+| (1 2 6 7 9) --> [0 2 0 0 2 1] | 22556 | TwoPair   |
+| (1 2 6 7 8) --> [0 2 0 0 3 0] | 22555 | FullHouse |
+| (1 2 5 8 9) --> [0 2 0 1 0 2] | 22466 | TwoPair   |
+| (1 2 5 7 9) --> [0 2 0 1 1 1] | 22456 | OnePair   |
+| (1 2 5 7 8) --> [0 2 0 1 2 0] | 22455 | TwoPair   |
+| (1 2 5 6 9) --> [0 2 0 2 0 1] | 22446 | TwoPair   |
+| (1 2 5 6 8) --> [0 2 0 2 1 0] | 22445 | TwoPair   |
+| (1 2 5 6 7) --> [0 2 0 3 0 0] | 22444 | FullHouse |
+| (1 2 4 8 9) --> [0 2 1 0 0 2] | 22366 | TwoPair   |
+| (1 2 4 7 9) --> [0 2 1 0 1 1] | 22356 | OnePair   |
+| (1 2 4 7 8) --> [0 2 1 0 2 0] | 22355 | TwoPair   |
+| (1 2 4 6 9) --> [0 2 1 1 0 1] | 22346 | OnePair   |
+| (1 2 4 6 8) --> [0 2 1 1 1 0] | 22345 | OnePair   |
+| (1 2 4 6 7) --> [0 2 1 2 0 0] | 22344 | TwoPair   |
+| (1 2 4 5 9) --> [0 2 2 0 0 1] | 22336 | TwoPair   |
+| (1 2 4 5 8) --> [0 2 2 0 1 0] | 22335 | TwoPair   |
+| (1 2 4 5 7) --> [0 2 2 1 0 0] | 22334 | TwoPair   |
+| (1 2 4 5 6) --> [0 2 3 0 0 0] | 22333 | FullHouse |
+| (1 2 3 8 9) --> [0 3 0 0 0 2] | 22266 | FullHouse |
+| (1 2 3 7 9) --> [0 3 0 0 1 1] | 22256 | 3ofKind   |
+| (1 2 3 7 8) --> [0 3 0 0 2 0] | 22255 | FullHouse |
+| (1 2 3 6 9) --> [0 3 0 1 0 1] | 22246 | 3ofKind   |
+| (1 2 3 6 8) --> [0 3 0 1 1 0] | 22245 | 3ofKind   |
+| (1 2 3 6 7) --> [0 3 0 2 0 0] | 22244 | FullHouse |
+| (1 2 3 5 9) --> [0 3 1 0 0 1] | 22236 | 3ofKind   |
+| (1 2 3 5 8) --> [0 3 1 0 1 0] | 22235 | 3ofKind   |
+| (1 2 3 5 7) --> [0 3 1 1 0 0] | 22234 | 3ofKind   |
+| (1 2 3 5 6) --> [0 3 2 0 0 0] | 22233 | FullHouse |
+| (1 2 3 4 9) --> [0 4 0 0 0 1] | 22226 | 4ofKind   |
+| (1 2 3 4 8) --> [0 4 0 0 1 0] | 22225 | 4ofKind   |
+| (1 2 3 4 7) --> [0 4 0 1 0 0] | 22224 | 4ofKind   |
+| (1 2 3 4 6) --> [0 4 1 0 0 0] | 22223 | 4ofKind   |
+| (1 2 3 4 5) --> [0 5 0 0 0 0] | 22222 | Yahtzee   |
+| (0 6 7 8 9) --> [1 0 0 0 0 4] | 16666 | 4ofKind   |
+| (0 5 7 8 9) --> [1 0 0 0 1 3] | 15666 | 3ofKind   |
+| (0 5 6 8 9) --> [1 0 0 0 2 2] | 15566 | TwoPair   |
+| (0 5 6 7 9) --> [1 0 0 0 3 1] | 15556 | 3ofKind   |
+| (0 5 6 7 8) --> [1 0 0 0 4 0] | 15555 | 4ofKind   |
+| (0 4 7 8 9) --> [1 0 0 1 0 3] | 14666 | 3ofKind   |
+| (0 4 6 8 9) --> [1 0 0 1 1 2] | 14566 | OnePair   |
+| (0 4 6 7 9) --> [1 0 0 1 2 1] | 14556 | OnePair   |
+| (0 4 6 7 8) --> [1 0 0 1 3 0] | 14555 | 3ofKind   |
+| (0 4 5 8 9) --> [1 0 0 2 0 2] | 14466 | TwoPair   |
+| (0 4 5 7 9) --> [1 0 0 2 1 1] | 14456 | OnePair   |
+| (0 4 5 7 8) --> [1 0 0 2 2 0] | 14455 | TwoPair   |
+| (0 4 5 6 9) --> [1 0 0 3 0 1] | 14446 | 3ofKind   |
+| (0 4 5 6 8) --> [1 0 0 3 1 0] | 14445 | 3ofKind   |
+| (0 4 5 6 7) --> [1 0 0 4 0 0] | 14444 | 4ofKind   |
+| (0 3 7 8 9) --> [1 0 1 0 0 3] | 13666 | 3ofKind   |
+| (0 3 6 8 9) --> [1 0 1 0 1 2] | 13566 | OnePair   |
+| (0 3 6 7 9) --> [1 0 1 0 2 1] | 13556 | OnePair   |
+| (0 3 6 7 8) --> [1 0 1 0 3 0] | 13555 | 3ofKind   |
+| (0 3 5 8 9) --> [1 0 1 1 0 2] | 13466 | OnePair   |
+| (0 3 5 7 9) --> [1 0 1 1 1 1] | 13456 | Junk      |
+| (0 3 5 7 8) --> [1 0 1 1 2 0] | 13455 | OnePair   |
+| (0 3 5 6 9) --> [1 0 1 2 0 1] | 13446 | OnePair   |
+| (0 3 5 6 8) --> [1 0 1 2 1 0] | 13445 | OnePair   |
+| (0 3 5 6 7) --> [1 0 1 3 0 0] | 13444 | 3ofKind   |
+| (0 3 4 8 9) --> [1 0 2 0 0 2] | 13366 | TwoPair   |
+| (0 3 4 7 9) --> [1 0 2 0 1 1] | 13356 | OnePair   |
+| (0 3 4 7 8) --> [1 0 2 0 2 0] | 13355 | TwoPair   |
+| (0 3 4 6 9) --> [1 0 2 1 0 1] | 13346 | OnePair   |
+| (0 3 4 6 8) --> [1 0 2 1 1 0] | 13345 | OnePair   |
+| (0 3 4 6 7) --> [1 0 2 2 0 0] | 13344 | TwoPair   |
+| (0 3 4 5 9) --> [1 0 3 0 0 1] | 13336 | 3ofKind   |
+| (0 3 4 5 8) --> [1 0 3 0 1 0] | 13335 | 3ofKind   |
+| (0 3 4 5 7) --> [1 0 3 1 0 0] | 13334 | 3ofKind   |
+| (0 3 4 5 6) --> [1 0 4 0 0 0] | 13333 | 4ofKind   |
+| (0 2 7 8 9) --> [1 1 0 0 0 3] | 12666 | 3ofKind   |
+| (0 2 6 8 9) --> [1 1 0 0 1 2] | 12566 | OnePair   |
+| (0 2 6 7 9) --> [1 1 0 0 2 1] | 12556 | OnePair   |
+| (0 2 6 7 8) --> [1 1 0 0 3 0] | 12555 | 3ofKind   |
+| (0 2 5 8 9) --> [1 1 0 1 0 2] | 12466 | OnePair   |
+| (0 2 5 7 9) --> [1 1 0 1 1 1] | 12456 | Junk      |
+| (0 2 5 7 8) --> [1 1 0 1 2 0] | 12455 | OnePair   |
+| (0 2 5 6 9) --> [1 1 0 2 0 1] | 12445 | OnePair   |
+| (0 2 5 6 8) --> [1 1 0 2 1 0] | 12445 | OnePair   |
+| (0 2 5 6 7) --> [1 1 0 3 0 0] | 12444 | 3ofKind   |
+| (0 2 4 8 9) --> [1 1 1 0 0 2] | 12366 | OnePair   |
+| (0 2 4 7 9) --> [1 1 1 0 1 1] | 12356 | Junk      |
+| (0 2 4 7 8) --> [1 1 1 0 2 0] | 12355 | OnePair   |
+| (0 2 4 6 9) --> [1 1 1 1 0 1] | 12346 | Junk      |
+| (0 2 4 6 8) --> [1 1 1 1 1 0] | 12345 | Straight  |
+| (0 2 4 6 7) --> [1 1 1 2 0 0] | 12344 | OnePair   |
+| (0 2 4 5 9) --> [1 1 2 0 0 1] | 12336 | OnePair   |
+| (0 2 4 5 8) --> [1 1 2 0 1 0] | 12335 | OnePair   |
+| (0 2 4 5 7) --> [1 1 2 1 0 0] | 12334 | OnePair   |
+| (0 2 4 5 6) --> [1 1 3 0 0 0] | 12333 | 3ofKind   |
+| (0 2 3 8 9) --> [1 2 0 0 0 2] | 12266 | TwoPair   |
+| (0 2 3 7 9) --> [1 2 0 0 1 1] | 12256 | OnePair   |
+| (0 2 3 7 8) --> [1 2 0 0 2 0] | 12255 | TwoPair   |
+| (0 2 3 6 9) --> [1 2 0 1 0 1] | 12246 | OnePair   |
+| (0 2 3 6 8) --> [1 2 0 1 1 0] | 12245 | OnePair   |
+| (0 2 3 6 7) --> [1 2 0 2 0 0] | 12244 | TwoPair   |
+| (0 2 3 5 9) --> [1 2 1 0 0 1] | 12236 | OnePair   |
+| (0 2 3 5 8) --> [1 2 1 0 1 0] | 12235 | OnePair   |
+| (0 2 3 5 7) --> [1 2 1 1 0 0] | 12234 | OnePair   |
+| (0 2 3 5 6) --> [1 2 2 0 0 0] | 12233 | TwoPair   |
+| (0 2 3 4 9) --> [1 3 0 0 0 1] | 12226 | 3ofKind   |
+| (0 2 3 4 8) --> [1 3 0 0 1 0] | 12225 | 3ofKind   |
+| (0 2 3 4 7) --> [1 3 0 1 0 0] | 12224 | 3ofKind   |
+| (0 2 3 4 6) --> [1 3 1 0 0 0] | 12223 | 3ofKind   |
+| (0 2 3 4 5) --> [1 4 0 0 0 0] | 12222 | 4ofKind   |
+| (0 1 7 8 9) --> [2 0 0 0 0 3] | 11666 | FullHouse |
+| (0 1 6 8 9) --> [2 0 0 0 1 2] | 11566 | TwoPair   |
+| (0 1 6 7 9) --> [2 0 0 0 2 1] | 11556 | TwoPair   |
+| (0 1 6 7 8) --> [2 0 0 0 3 0] | 11555 | FullHouse |
+| (0 1 5 8 9) --> [2 0 0 1 0 2] | 11466 | TwoPair   |
+| (0 1 5 7 9) --> [2 0 0 1 1 1] | 11345 | OnePair   |
+| (0 1 5 7 8) --> [2 0 0 1 2 0] | 11455 | TwoPair   |
+| (0 1 5 6 9) --> [2 0 0 2 0 1] | 11446 | TwoPair   |
+| (0 1 5 6 8) --> [2 0 0 2 1 0] | 11445 | TwoPair   |
+| (0 1 5 6 7) --> [2 0 0 3 0 0] | 11444 | FullHouse |
+| (0 1 4 8 9) --> [2 0 1 0 0 2] | 11366 | TwoPair   |
+| (0 1 4 7 9) --> [2 0 1 0 1 1] | 11356 | OnePair   |
+| (0 1 4 7 8) --> [2 0 1 0 2 0] | 11355 | TwoPair   |
+| (0 1 4 6 9) --> [2 0 1 1 0 1] | 11346 | OnePair   |
+| (0 1 4 6 8) --> [2 0 1 1 1 0] | 11345 | OnePair   |
+| (0 1 4 6 7) --> [2 0 1 2 0 0] | 11344 | TwoPair   |
+| (0 1 4 5 9) --> [2 0 2 0 0 1] | 11336 | TwoPair   |
+| (0 1 4 5 8) --> [2 0 2 0 1 0] | 11335 | TwoPair   |
+| (0 1 4 5 7) --> [2 0 2 1 0 0] | 11334 | TwoPair   |
+| (0 1 4 5 6) --> [2 0 3 0 0 0] | 11333 | FullHouse |
+| (0 1 3 8 9) --> [2 1 0 0 0 2] | 11266 | TwoPair   |
+| (0 1 3 7 9) --> [2 1 0 0 1 1] | 11256 | OnePair   |
+| (0 1 3 7 8) --> [2 1 0 0 2 0] | 11255 | TwoPair   |
+| (0 1 3 6 9) --> [2 1 0 1 0 1] | 11246 | OnePair   |
+| (0 1 3 6 8) --> [2 1 0 1 1 0] | 11245 | OnePair   |
+| (0 1 3 6 7) --> [2 1 0 2 0 0] | 11244 | TwoPair   |
+| (0 1 3 5 9) --> [2 1 1 0 0 1] | 11236 | OnePair   |
+| (0 1 3 5 8) --> [2 1 1 0 1 0] | 11235 | OnePair   |
+| (0 1 3 5 7) --> [2 1 1 1 0 0] | 11234 | OnePair   |
+| (0 1 3 5 6) --> [2 1 2 0 0 0] | 11233 | TwoPair   |
+| (0 1 3 4 9) --> [2 2 0 0 0 1] | 11226 | TwoPair   |
+| (0 1 3 4 8) --> [2 2 0 0 1 0] | 11225 | TwoPair   |
+| (0 1 3 4 7) --> [2 2 0 1 0 0] | 11224 | TwoPair   |
+| (0 1 3 4 6) --> [2 2 1 0 0 0] | 11223 | TwoPair   |
+| (0 1 3 4 5) --> [2 3 0 0 0 0] | 11222 | FullHouse |
+| (0 1 2 8 9) --> [3 0 0 0 0 2] | 11166 | FullHouse |
+| (0 1 2 7 9) --> [3 0 0 0 1 1] | 11156 | 3ofKind   |
+| (0 1 2 7 8) --> [3 0 0 0 2 0] | 11155 | FullHouse |
+| (0 1 2 6 9) --> [3 0 0 1 0 1] | 11146 | 3ofKind   |
+| (0 1 2 6 8) --> [3 0 0 1 1 0] | 11145 | 3ofKind   |
+| (0 1 2 6 7) --> [3 0 0 2 0 0] | 11144 | FullHouse |
+| (0 1 2 5 9) --> [3 0 1 0 0 1] | 11136 | 3ofKind   |
+| (0 1 2 5 8) --> [3 0 1 0 1 0] | 11135 | 3ofKind   |
+| (0 1 2 5 7) --> [3 0 1 1 0 0] | 11134 | 3ofKind   |
+| (0 1 2 5 6) --> [3 0 2 0 0 0] | 11133 | FullHouse |
+| (0 1 2 4 9) --> [3 1 0 0 0 1] | 11126 | 3ofKind   |
+| (0 1 2 4 8) --> [3 1 0 0 1 0] | 11125 | 3ofKind   |
+| (0 1 2 4 7) --> [3 1 0 1 0 0] | 11124 | 3ofKind   |
+| (0 1 2 4 6) --> [3 1 1 0 0 0] | 11123 | 3ofKind   |
+| (0 1 2 4 5) --> [3 2 0 0 0 0] | 11122 | FullHouse |
+| (0 1 2 3 9) --> [4 0 0 0 0 1] | 11116 | 4ofKind   |
+| (0 1 2 3 8) --> [4 0 0 0 1 0] | 11115 | 4ofKind   |
+| (0 1 2 3 7) --> [4 0 0 1 0 0] | 11114 | 4ofKind   |
+| (0 1 2 3 6) --> [4 0 1 0 0 0] | 11113 | 4ofKind   |
+| (0 1 2 3 5) --> [4 1 0 0 0 0] | 11112 | 4ofKind   |
+| (0 1 2 3 4) --> [5 0 0 0 0 0] | 11111 | Yahtzee   |
+
+  Now we can tabulate the correct probabilities:
+
+| P(Yahtzee)   | = | (/  6 252.0) | = | 0.023809523809523808 |
+| P(4ofKind)   | = | (/ 30 252.0) | = |  0.11904761904761904 |
+| P(Straight)  | = | (/  2 252.0) | = | 0.007936507936507936 |
+| P(FullHouse) | = | (/ 30 252.0) | = |  0.11904761904761904 |
+| P(3ofKind)   | = | (/ 60 252.0) | = |  0.23809523809523808 |
+| P(TwoPair)   | = | (/ 60 252.0) | = |  0.23809523809523808 |
+| P(OnePair)   | = | (/ 60 252.0) | = |  0.23809523809523808 |
+| P(Junk)      | = | (/  4 252.0) | = | 0.015873015873015872 |

@@ -1,0 +1,137 @@
+#+TITLE: DM2 Assignment 02.3
+#+LANGUAGE: en
+#+OPTIONS: H:4 num:nil toc:nil \n:nil @:t ::t |:t ^:t *:t TeX:t LaTeX:t
+#+OPTIONS: html-postamble:nil
+#+STARTUP: showeverything entitiespretty
+#+SETUPFILE: theme-bigblow.setup
+
+[[elisp:(browse-url-of-file%20(org-html-export-to-html))][Export to HTML and Browse]]
+[[elisp:(org-clock-report%201)][Insert/Update Clock Summary Report]]
+#+BEGIN: clocktable :scope file :maxlevel 2
+#+CAPTION: Clock summary at [2018-09-29 Sat 23:06]
+| Headline                                |   Time |
+|-----------------------------------------+--------|
+| *Total time*                            | *1:19* |
+|-----------------------------------------+--------|
+| Review Set Intersections and Unions     |   0:13 |
+| Review the Symmetric Difference of Sets |   0:01 |
+| Review DeMorgan\rsquo{}s Laws                  |   0:29 |
+| Review the Cartesian Products of Sets   |   0:36 |
+#+END:
+
+* DONE Review Set Intersections and Unions
+  CLOSED: [2018-09-29 Sat 21:53]
+  :LOGBOOK:
+  CLOCK: [2018-09-29 Sat 22:20]--[2018-09-29 Sat 22:25] =>  0:05
+  CLOCK: [2018-09-29 Sat 21:45]--[2018-09-29 Sat 21:53] =>  0:08
+  :END:
+  Let /A/ = =[0 2 4 6 8 10]=,
+      /B/ = =[0 1 2 3 4 5 6]=, and
+      /C/ = =[4 5 6 7 8 9 10]=.
+
+  Find
+  1. \(A \cap B \cap C\)
+  2. \(A \cup B \cup C\)
+  3. \((A \cup B) \cap C\)
+  4. \((A \cap B) \cup C\)
+  5. (A \cup (B \cap C))
+     
+(setq
+  A (list 0 2 4 6 8 10)
+  B (list 0 1 2 3 4 5 6)
+  C (list 4 5 6 7 8 9 10))
+
+1. (A \cap B) = [0 2 4 6] \cap C = *[4 6]*
+   (sort (intersection (intersection A B) C) '<) *(4 6)*
+
+2. (A \cup B) = [0 1 2 3 4 5 6 8 10] \cup C = *[0 1 2 3 4 5 6 7 8 9 10]*
+   (sort (union (union A B) C) '<) *(0 1 2 3 4 5 6 7 8 9 10)*
+
+3. (A \cup B) = [0 1 2 3 4 5 6 8 10] \cap C = *[4 5 6 8 10]*
+   (sort (intersection (union A B) C) '<) *(4 5 6 8 10)*
+
+4. (A \cap B) = [0 2 4 6] \cup C = *[0 2 4 5 6 7 8 9 10]*
+   (sort (union (intersection A B) C) '<) *(0 2 4 5 6 7 8 9 10)*
+
+5. (B \cap C) = [4 5 6] \cup A = *[0 2 4 5 6 8 10]*
+   (sort (union (intersection B C) A) '<) *(0 2 4 5 6 8 10)*
+
+* DONE Review the Symmetric Difference of Sets
+  CLOSED: [2018-09-29 Sat 21:56]
+  :LOGBOOK:
+  CLOCK: [2018-09-29 Sat 21:54]--[2018-09-29 Sat 21:55] =>  0:01
+  :END:
+  Find the *symmetric difference* (\(A \oplus B\)) (which, recall, is
+  the set containing those elements in either /A/ or /B/, but not in
+  both /A/ and /B/ --- i.e., \(A \oplus B = (A - B) \cup (B - A)\)) of
+  /A/ = =[1 3 5]= and /B/ = =[1 2 3]=.
+
+Find the "xor" of A and B
+[2 5]
+
+* DONE Review DeMorgan\rsquo{}s Laws
+  CLOSED: [2018-09-29 Sat 22:26]
+  :LOGBOOK:
+  CLOCK: [2018-09-29 Sat 21:57]--[2018-09-29 Sat 22:26] =>  0:29
+  :END:
+  DeMorgan's laws for sets involve set intersection, set union, and set
+  complementation. Find what elisp functions exist to help explore these laws,
+  and do some experiments with them.
+
+(setq
+  A (list 3 4 5)
+  B (list 4 5 6))
+
+(intersection A B)
+(5 4)
+
+(union A B)
+(6 3 4 5)
+
+(union (set-difference A B) (set-difference B A))
+(6 3)
+
+* DONE Review the Cartesian Products of Sets
+  CLOSED: [2018-09-29 Sat 23:03]
+  :LOGBOOK:
+  CLOCK: [2018-09-29 Sat 22:27]--[2018-09-29 Sat 23:03] =>  0:36
+  :END:
+  Let A = [a b c], B = [x y], and C = [0 1]. Find
+
+  1. A \times B \times C
+  2. C \times B \times A
+  3. C \times A \times B
+  4. B \times B \times B
+
+(defun set-cartesian (set1 set2)
+  (setq new-list nil)
+  (loop for x in set1
+    do (loop for y in set2
+         do (setq new-list (append new-list (list (-flatten (list x y)))))))
+  new-list
+)
+
+(setq
+  A (list 'a 'b 'c)
+  B (list 'x 'y)
+  C (list 0 1))
+
+
+(set-cartesian A B)((a x) (a y) (b x) (b y) (c x) (c y))
+(set-cartesian '((a x) (a y) (b x) (b y) (c x) (c y)) C)
+((a x 0) (a x 1) (a y 0) (a y 1) (b x 0) (b x 1) (b y 0) (b y 1) (c x 0) (c x 1) (c y 0) (c y 1))
+
+  1. (set-cartesian (set-cartesian A B) C)
+     ((a x 0) (a x 1) (a y 0) (a y 1) (b x 0) (b x 1) (b y 0) (b y 1) (c x 0) (c x 1) (c y 0) (c y 1))
+
+
+  2. (set-cartesian (set-cartesian C B) A)
+     ((0 x a) (0 x b) (0 x c) (0 y a) (0 y b) (0 y c) (1 x a) (1 x b) (1 x c) (1 y a) (1 y b) (1 y c))
+
+
+  3. (set-cartesian (set-cartesian C A) B)
+     ((0 a x) (0 a y) (0 b x) (0 b y) (0 c x) (0 c y) (1 a x) (1 a y) (1 b x) (1 b y) (1 c x) (1 c y))
+
+
+  4. (set-cartesian (set-cartesian B B) B)
+     ((x x x) (x x y) (x y x) (x y y) (y x x) (y x y) (y y x) (y y y))

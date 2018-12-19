@@ -1,0 +1,363 @@
+#+TITLE: Build for General Purpose
+#+LANGUAGE: en
+#+OPTIONS: H:4 num:nil toc:nil \n:nil @:t ::t |:t ^:t *:t TeX:t LaTeX:t d:(not "HINT")
+#+OPTIONS: html-postamble:nil
+#+STARTUP: showeverythingNOT entitiespretty
+#+SETUPFILE: ../theme-bigblow.setup
+
+  For helps and hints for writing elisp, this document is a cleaned-up version
+  of what was presented in class.
+
+  What is wrong with the following code?
+
+  (Hint: it is wrong in *so many* different ways!)
+#+BEGIN_SRC elisp :results code
+  (require 'calc) ;; for calc-eval
+
+  (setq r1 4
+        r2 2
+        r3 9
+        m1 7
+        m2 11
+        m3 13
+        m (* m1 m2 m3)
+        o1 143
+        o2 91
+        o3 77
+        y1 -2
+        y2  4
+        y3 -1
+        infix-format-str
+        "(%d*%d*%d + %d*%d*%d + %d*%d*%d) %% %d"
+        formatted-for-calc-eval
+        (format infix-format-str r1 o1 y1 r2 o2 y2 r3 o3 y3 m)
+        )
+  (list
+   formatted-for-calc-eval
+   (calc-eval formatted-for-calc-eval)
+   (mod (+ (* r1 o1 y1) (* r2 o2 y2) (* r3 o3 y3)) m)))
+#+END_SRC
+
+#+RESULTS:
+#+BEGIN_SRC elisp
+("(4*143*-2 + 2*91*4 + 9*77*-1) % 1001" "893" 893)
+#+END_SRC
+
+* Undo the damage
+   1. Wrap in a function (taking no parameters therefore not so useful --- but
+      see step 2) and remove extraneous (albeit informative) stuff:
+#+BEGIN_SRC elisp :results silent
+  (defun crt-solve ()
+  (setq r1 4
+        r2 2
+        r3 9
+        m1 7
+        m2 11
+        m3 13
+        m (* m1 m2 m3)
+        o1 143
+        o2 91
+        o3 77
+        y1 -2
+        y2  4
+        y3 -1)
+   (mod (+ (* r1 o1 y1) (* r2 o2 y2) (* r3 o3 y3)) m))
+#+END_SRC
+
+#+BEGIN_SRC elisp
+  (crt-solve)
+#+END_SRC
+
+#+RESULTS:
+: 893
+
+  2. Unhardwire the first six variables by making them parameters, and o1, o2,
+     and o3 by computing their values from the m\rsquo{}s:
+#+BEGIN_SRC elisp :results silent
+  (defun crt-solve (r1 r2 r3 m1 m2 m3)
+  (setq m (* m1 m2 m3)
+        o1 (* m2 m3) ;; 143 = (/ m m1)
+        o2 (/ m m2)  ;; 91
+        o3 (/ m m3)
+        y1 -2
+        y2  4
+        y3 -1)
+   (mod (+ (* r1 o1 y1) (* r2 o2 y2) (* r3 o3 y3)) m))
+#+END_SRC
+#+BEGIN_SRC elisp
+  (crt-solve 4 9 2 7 11 13)
+#+END_SRC
+
+#+RESULTS:
+: 977
+
+  3. Unhardwire y1, y2 and y3 by computing their values from the o\rsquo{}s and the m\rsquo{}s
+     via the =find-mmi= (and =egcd=) helper functions:
+#+BEGIN_SRC elisp :results silent
+  (require 'cl) ; for destructuring-bind
+
+  (defun egcd (a b)
+    "Computes the greatest common divisor of a and b recursively.
+     This extended version returns a list of d, x and y, where
+     d = ax + by = gcd(a, b)."
+    (if (zerop b)
+        (list a 1 0)
+      (destructuring-bind (d x y) (egcd b (% a b))
+        (list d y (- x (* (/ a b) y))))))
+
+  (defun find-mmi (o m)
+    (destructuring-bind (d x y) (egcd o m) x))
+#+END_SRC
+
+  As a side note --- to see what destructuring-bind does for you:
+#+BEGIN_SRC elisp :results silent
+  (defun find-mmi-without-destructuring-bind (o m)
+    (let* ((dxy (egcd o m))
+           (d (first dxy))
+           (x (second dxy))
+           (y (third dxy)))
+       x))
+#+END_SRC
+
+#+BEGIN_SRC elisp :results silent
+  (defun crt-solve (r1 r2 r3 m1 m2 m3)
+  (setq m (* m1 m2 m3)
+        o1 (* m2 m3) ;; 143 = (/ m m1)
+        o2 (/ m m2)  ;; 91
+        o3 (/ m m3)
+        y1 (find-mmi o1 m1)
+        y2 (find-mmi o2 m2)
+        y3 (find-mmi o3 m3))
+   (mod (+ (* r1 o1 y1) (* r2 o2 y2) (* r3 o3 y3)) m))
+#+END_SRC
+
+#+BEGIN_SRC elisp
+  (crt-solve 4 2 9 7 11 13)
+#+END_SRC
+
+#+RESULTS:
+: 893
+
+  4. Call setq-chain-to-let to remove \ldquo{}global\rdquo variable dependencies
+#+BEGIN_SRC emacs-lisp :results silent
+  (defun setq-chain-to-let (sym-of-func-with-setq-chain)
+    (let ((results nil)
+          (to-parse (reverse (cdaddr (symbol-function sym-of-func-with-setq-chain))))
+          (sym nil)
+          (val nil))
+      (while (not (null to-parse))
+        (setq val (pop to-parse) sym (pop to-parse))
+        (push (list sym val) results))
+      (list 'let* results)))
+#+END_SRC
+
+#+BEGIN_SRC emacs-lisp :results code
+  (setq-chain-to-let 'crt-solve)
+#+END_SRC
+
+#+RESULTS:
+#+BEGIN_SRC emacs-lisp
+(let*
+    ((m
+      (* m1 m2 m3))
+     (o1
+      (* m2 m3))
+     (o2
+      (/ m m2))
+     (o3
+      (/ m m3))
+     (y1
+      (find-mmi o1 m1))
+     (y2
+      (find-mmi o2 m2))
+     (y3
+      (find-mmi o3 m3))))
+#+END_SRC
+
+  Removing the extraneous line breaks and replacing the =setq= chain with the =let*=:
+#+BEGIN_SRC elisp :results silent
+  (defun crt-solve (r1 r2 r3 m1 m2 m3)
+    (let* ((m (* m1 m2 m3))
+           (o1 (* m2 m3))
+           (o2 (/ m m2))
+           (o3 (/ m m3))
+           (y1 (find-mmi o1 m1))
+           (y2 (find-mmi o2 m2))
+           (y3 (find-mmi o3 m3))))
+    (mod (+ (* r1 o1 y1) (* r2 o2 y2) (* r3 o3 y3)) m))
+#+END_SRC
+
+#+BEGIN_SRC elisp
+  (crt-solve 4 2 9 7 11 13)
+#+END_SRC
+
+#+RESULTS:
+: 893
+
+  5. To have the best of both let and setq, include both! (But first unbind
+     (remove the values from) the global variables previously set):
+#+BEGIN_SRC elisp :results silent
+  (mapc 'makunbound '(m o1 o2 o3 y1 y2 y3))
+  (defun crt-solve (r1 r2 r3 m1 m2 m3)
+    (let (m o1 o2 o3 y1 y2 y3)
+      (setq m (* m1 m2 m3)
+            o1 (* m2 m3) ;; 143 = (/ m m1)
+            o2 (/ m m2)  ;; 91
+            o3 (/ m m3)
+            y1 (find-mmi o1 m1)
+            y2 (find-mmi o2 m2)
+            y3 (find-mmi o3 m3))
+      (mod (+ (* r1 o1 y1) (* r2 o2 y2) (* r3 o3 y3)) m)))
+#+END_SRC
+
+#+BEGIN_SRC elisp
+  (crt-solve 4 2 9 7 11 13)
+#+END_SRC
+
+#+RESULTS:
+: 893
+
+  Try to evaluate the following to see that the value of the =y1= symbol (as
+  variable) is void (or so the error message says):
+#+BEGIN_SRC elisp
+  y1
+#+END_SRC
+
+  6. Use &rest and functional-programming-style =mapcar=, =apply=, and =mapcar*=
+     to make it completely general (even taking zero parameters):
+#+BEGIN_SRC elisp :results silent
+  (defun crt-solve (&rest pairs)
+    (let (m o1 o2 o3 y1 y2 y3)
+      (setq r-list (mapcar 'car pairs)
+            m-list (mapcar 'cdr pairs)
+            m (apply '* m-list)
+            o-list (mapcar (lambda (x) (/ m x)) m-list)
+            y-list (mapcar* 'find-mmi o-list m-list))
+      (mod (apply '+ (mapcar* '* r-list o-list y-list)) m)))
+#+END_SRC
+
+#+BEGIN_SRC elisp
+  (crt-solve '(4 . 7) (quote (2 . 11)) (cons 9 13))
+#+END_SRC
+
+#+RESULTS:
+: 893
+
+#+BEGIN_SRC elisp
+  (crt-solve (cons 23 191) '(4 . 7) (quote (2 . 11)) (cons 9 13))
+#+END_SRC
+
+#+RESULTS:
+: 6899
+
+  Test with fewer than 3 pairs:
+#+BEGIN_SRC elisp
+  (crt-solve '(19285798710 . 7))
+#+END_SRC
+
+#+RESULTS:
+: 3
+
+  Test with no pairs:
+#+BEGIN_SRC elisp
+  (crt-solve)
+#+END_SRC
+
+#+RESULTS:
+: 0
+
+  This works because the \ldquo{}empty product\rdquo is 1:
+#+BEGIN_SRC elisp
+  (apply '* nil)
+#+END_SRC
+
+#+RESULTS:
+: 1
+
+  7. If we want globals to help us debug our code, comment out the let
+     (and remove the final closing parenthesis):
+#+BEGIN_SRC elisp :results silent
+  (defun crt-solve (&rest pairs)
+;;    (let (m o1 o2 o3 y1 y2 y3)
+      (setq r-list (mapcar 'car pairs)
+            m-list (mapcar 'cdr pairs)
+            m (apply '* m-list)
+            o-list (mapcar (lambda (x) (/ m x)) m-list)
+            y-list (mapcar* 'find-mmi o-list m-list))
+      (mod (apply '+ (mapcar* '* r-list o-list y-list)) m))
+#+END_SRC
+
+#+BEGIN_SRC elisp
+  (crt-solve '(4 . 7) (quote (2 . 11)) (cons 9 13))
+#+END_SRC
+
+#+RESULTS:
+: 893
+
+#+BEGIN_SRC elisp :results raw
+  m-list
+#+END_SRC
+
+#+RESULTS:
+(7 11 13)
+
+* An alternative to elisp
+  Python, anyone? It too has function programming features!
+#+BEGIN_SRC python :results value
+  from functools import reduce
+
+  def egcd (a,b):
+      if b == 0:
+          return (a,1,0)
+      else:
+          q = a//b
+          r = a%b
+          (d,x,y) = egcd(b,r)
+          z = x - q*y
+          return (d,y,z)
+
+  def find_mmi(a,b):
+      return egcd(a,b)[1]
+
+  def crt_solve(*pairs):
+      r_list = list(map(lambda x:x[0], pairs))
+      m_list = list(map(lambda x:x[1], pairs))
+      m = reduce(lambda x,y:x*y, m_list, 1)
+      o_list = list(map(lambda x:m/x, m_list))
+      y_list = list(map(find_mmi,o_list,m_list))
+      return sum(map(lambda x,y,z:x*y*z,r_list,o_list,y_list))%m
+
+  return crt_solve((4,7),(9,13),(2,11))
+#+END_SRC
+
+#+RESULTS:
+: 893
+
+* Help for converting back and forth
+  To see (a limited form of) nested expressions that use prefix notation in the
+  more familiar infix way:
+#+BEGIN_SRC elisp :results silent
+  (defun prefix->infix (pre)
+    (if (not (listp pre))
+        pre
+      (or (= 3 (length pre)) (error "not a 3-length list"))
+      (list (prefix->infix (nth 1 pre))
+            (nth 0 pre)
+            (prefix->infix (nth 2 pre)))))
+#+END_SRC
+
+#+BEGIN_SRC elisp :results raw
+  (prefix->infix '(mod (+ (* 4 -286) (* 2 364)) 1001))
+#+END_SRC
+
+#+RESULTS:
+(((4 * -286) + (2 * 364)) mod 1001)
+
+  It works for symbolic expressions too (still with the limitation of lists of
+  length 3):
+#+BEGIN_SRC elisp :results raw
+  (prefix->infix '(mod (+ (* r1 o1*y1) (* r2 o2*y2)) m))
+#+END_SRC
+
+#+RESULTS:
+(((r1 * o1*y1) + (r2 * o2*y2)) mod m)

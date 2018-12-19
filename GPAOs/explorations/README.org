@@ -1,0 +1,229 @@
+#+TITLE: README
+#+AUTHOR: Rick Neff 
+#+EMAIL:  NeffR@byui.edu 
+#+DATE: 10 November 2018
+#+OPTIONS: H:4 num:nil toc:t \n:nil @:t ::t |:t ^:t *:t TeX:t LaTeX:t ':t |:t
+#+OPTIONS: html-postamble:t
+#+STARTUP: showeverything entitiespretty
+
+  Remember [[https://firstthreeodds.org/17657741833134731255/creativity.html][Steve Olson]] and [[https://rickneff.github.io/exercises-versus-problems.html][Paul Zietz]]? Here is an excerpt from Steve Olson\rsquo{}s
+  book where he introduces Paul Zietz and quotes him on his approach to teaching
+  /creative problem solving/, which Paul Zietz believes *can be taught* --- but
+  his approach may surprise you!
+
+#+BEGIN_QUOTE
+  Paul Zeitz, now a professor of mathematics at the University of San Francisco,
+  was a member of the U.S. Olympiad team that competed [in 1974].
+
+  [\dots]
+
+  Zeitz [is] always interested in applying the problem solving he’d done as an
+  Olympian in his teaching. So he [developed] a series of tough mathematical
+  challenges that his students would work on for extended periods. He found this
+  approach often engaged the least talented kids just as much as the most
+  talented.
+
+  [\dots]
+
+  He [wrote the book] [[https://www.wiley.com/en-us/The+Art+and+Craft+of+Problem+Solving%252C+3rd+Edition-p-9781119094845][The Art and Craft of Problem Solving]], which was [first]
+  published in 1999. It’s a challenging book --- many math Olympians use it to
+  prepare for the competition. Zeitz uses it with all the students in his
+  classes --- including those studying to be teachers --- often by breaking them
+  up into teams and letting them work on specific problems for days at a time.
+  “The level of the math is not really an issue,” he says. “My main goal when I
+  teach this kind of course is to inspire my students to really think hard. It
+  sounds simplistic, but that’s all there is to it. I want to get students used
+  to a mindset that a problem that is worth solving is worth pondering for a
+  long time. It’s hard to train somebody how to think for a long amount of time.
+  Most people think in maybe five-second bursts. I’m talking about spending days
+  thinking about something. So the level of the math is less an issue than is
+  rewiring their brains so they can concentrate better.”
+
+  Rewiring the brains of students is an ambitious goal, Zeitz admits. But it can
+  be done by demonstrating that math is not what people think it is. “To be good
+  at math you have to be both rigorous and a good explorer,” he says. “And this
+  exploration, this organized play, that’s what people don’t understand about
+  math --- it’s a very social activity.”
+#+END_QUOTE
+
+  Each of the below (not randomly-chosen!) eight bullets is an opportunity for
+  this social activity of problem exploration. And yes, each is an opportunity
+  for earning extra credit --- but *only if* done as a group. Your group must
+  consist of no more than five and no fewer than three *current* DM1 students,
+  although you do not need to all be in the same section.
+
+  Enjoy!
+
+* ANT
+  Watch and take notes on a video about Pi, Complex Numbers and Prime Numbers to
+  get a taste of Analytic Number Theory: [[https://www.youtube.com/watch?v=NaL_Cb42WyY][Pi hiding in prime regularities]]
+* BGP
+  Build General Purpose
+  code and learn debugging techniques in the process.
+  See [[file:build-for-general-purpose.org]]
+* TWP
+  Solve [[https://rickneff.github.io/the-wizard-problem.html][The Wizard Problem]] *without* googling (or the like).
+* LBT
+  A Bus Ticket has six digits (0-9). A ticket is lucky if the first three digits
+  sum to the same number as the last three digits. For example, the following
+  are all lucky:
+
+  - 000000
+  - 999999
+  - 123420
+  - 961088
+    
+  How many Lucky Bus Tickets are there?
+
+  Find the answer *without* using brute-force exhaustive search (like the code
+  below does):
+#+BEGIN_SRC elisp :results silent
+  (defun sum-of-digits (n)
+    (if (zerop n)
+        0
+      (+ (mod n 10) (sum-of-digits (/ n 10)))))
+
+  (loop for n from 0 to 999999 
+        count (= (sum-of-digits (/ n 1000)) (sum-of-digits (% n 1000))))
+#+END_SRC
+
+#+RESULTS:
+: 55252
+* OET
+  Org Element Tree
+ 
+  Improve the grade calculation code in
+  [[file:~/.spacemacs.d/work/grade-considerations.org]] by eliminating the vector of
+  vectors of TLAs, instead extracting the EPP TLAs from the document structure,
+  as does the following code:
+#+BEGIN_SRC elisp :results silent
+  (require 'org)
+
+  (defun save-loadable-org-element-tree ()
+    (let ((file-path "oet.el")
+          (org-element-tree (org-element-parse-buffer))
+          (print-circle t))
+      (with-temp-buffer
+        (insert "(setq oet '")
+        (pp org-element-tree (current-buffer))
+        (insert ")\n")
+        (write-file file-path))
+      file-path))
+
+  (defun gather-tlas (&optional org-element-tree)
+    (let ((tlas nil))
+      (org-element-map (or org-element-tree (org-element-parse-buffer))
+          'headline
+        (lambda (x) (push (intern (org-element-property :raw-value x)) tlas)))
+      (apply 'vector (nreverse tlas))))
+#+END_SRC
+
+#+BEGIN_SRC elisp :results silent
+  (load-file (save-loadable-org-element-tree))
+#+END_SRC
+
+#+BEGIN_SRC elisp :results raw
+  (setq tlas (gather-tlas)) 
+#+END_SRC
+* STT
+  Space-Time Tradeoff
+
+  The vector named first-ten-million-primes is created when loading the
+  "first-ten-million-primes" package. That consists of 10,000,000 primes
+  hardwired into a 89 Mbyte file! (It is problematic to load this source
+  file into emacs, but loading the package does not require this.)
+
+#+name: ftmp-package-filename
+#+BEGIN_SRC elisp
+  (expand-file-name "~/.emacs.d/elpa/first-ten-million-primes-1.0/first-ten-million-primes.el")
+#+END_SRC
+
+#+BEGIN_SRC sh :results output :var filename=ftmp-package-filename
+  head -50 $filename 
+#+END_SRC
+
+#+BEGIN_SRC sh :results output :var filename=ftmp-package-filename
+  tail -50 $filename 
+#+END_SRC
+
+  The question to explore: Would it be faster to use an efficient Sieve of
+  Eratosthenes and just create this vector on the fly?
+
+#+BEGIN_SRC elisp :results silent
+  (defun sieve (limit)
+    "Sieve of Eratothenes."
+    (let ((prime-vec (make-bool-vector limit t)))
+      (aset prime-vec 0 nil) ;; zero is not prime
+      (aset prime-vec 1 nil) ;; nor is one
+      (loop for p from 2 to (floor (sqrt limit))
+            when (aref prime-vec p) ;; when p is prime
+            do (loop for i from (* p p) below limit by p
+                     do (aset prime-vec i nil)))
+      prime-vec))
+
+  (setq prime-vector (sieve 100000000))
+
+  (defun is-prime (n)
+    (aref prime-vector n))
+#+END_SRC
+
+#+BEGIN_SRC elisp :results silent
+  (defmacro measure-time (&rest body)
+    "Measure and return the running time of the code in body."
+    (declare (indent defun))
+    (let ((start (make-symbol "start")))
+      `(let ((,start (float-time)))
+         ,@body
+         (- (float-time) ,start))))
+#+END_SRC
+
+#+BEGIN_SRC elisp
+  (require 'calc-math)
+
+  (vector (measure-time
+            (setq results
+                  (math-read-number
+                   (mapconcat 'number-to-string
+                              (number-sequence 1 100) ""))))
+          results)
+#+END_SRC
+* AYC
+  Analyze Yahtzee Correctly.
+  See [[file:Yahtzee-analysis.org]].
+* IPR
+  Implement in elisp Pollard's Rho method of factorization (see bigal.jar
+  (generated by the "bigal" package)). Compare it with the simplistic
+  trial-division method below:
+
+#+BEGIN_SRC elisp :results silent
+  (defun factorize (n)
+    "A brute-force method to obtain n's
+  (standard form, but not CSF) factorization."
+    (let ((factors nil)
+          (k 0)
+          (p 2))
+      (while (zerop (% n p))
+        (setq n (/ n p)
+              k (1+ k)))
+      (if (not (zerop k))
+          (setq factors (cons (cons p k) factors)))
+      (setq p 1)
+      (while (<= (* p p) n)
+        (setq p (+ p 2)
+              k 0)
+        (while (zerop (% n p))
+          (setq n (/ n p)
+                k (1+ k)))
+        (if (not (zerop k))
+            (setq factors (cons (cons p k) factors))))
+      (if (not (= n 1))
+          (setq factors (cons (cons n 1) factors)))
+      (sort factors (lambda (x y) (< (car x) (car y))))))
+#+END_SRC
+
+#+BEGIN_SRC elisp
+  (factorize 1203157)
+#+END_SRC
+
+#+RESULTS:
+: ((641 . 1) (1877 . 1))

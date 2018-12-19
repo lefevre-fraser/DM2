@@ -1,0 +1,16 @@
+(require 'bigal)bigal
+ bigal.jar 39485739487 factorize
+
+(setq shell-default-shell 'shell)shell
+shell-default-shell
+#+BEGIN_SRC shell
+  java
+#+END_SRC
+
+#+RESULTS:
+| Microsoft                            | Windows   | [Version  | 10.0.17134.345] |     |        |           |
+| (c)                                  | 2018      | Microsoft | Corporation.    | All | rights | reserved. |
+|                                      |           |           |                 |     |        |           |
+| c:\Users\mp3le\Desktop\Share\BYUI\CS | 238>More? |           |                 |     |        |           |
+
+

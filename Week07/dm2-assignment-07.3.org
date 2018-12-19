@@ -1,0 +1,245 @@
+#+TITLE: DM2 Assignment 07.3
+#+LANGUAGE: en
+#+OPTIONS: H:4 num:nil toc:nil \n:nil @:t ::t |:t ^:t *:t TeX:t LaTeX:t
+#+OPTIONS: html-postamble:nil
+#+STARTUP: showeverything entitiespretty
+#+SETUPFILE: theme-bigblow.setup
+
+[[elisp:(find-file-other-window%20"generic-instructions.org")][Read Instructions]]
+[[elisp:(progn%20(save-buffer)%20(browse-url-of-file%20(org-html-export-to-html)))][Export to HTML and Browse]]
+[[elisp:(progn%20(save-buffer)%20(org-clock-report%201)%20(save-buffer))][Insert/Update Clock Summary Report]]
+#+BEGIN: clocktable :scope file :maxlevel 2
+#+CAPTION: Clock summary at [2018-11-05 Mon 16:21]
+| Headline                                |   Time |
+|-----------------------------------------+--------|
+| *Total time*                            | *1:50* |
+|-----------------------------------------+--------|
+| Answer a Question Involving Multiple... |   0:19 |
+| Characterize a Letter-to-Number Mapping |   0:19 |
+| Code The Inverse Mapping                |   0:36 |
+| Discern a Pattern                       |   0:36 |
+#+END:
+
+
+* DONE Answer a Question Involving Multiple Ideas
+  CLOSED: [2018-11-05 Mon 10:37]
+  :LOGBOOK:
+  CLOCK: [2018-11-05 Mon 10:18]--[2018-11-05 Mon 10:37] =>  0:19
+  :END:
+  The Pythagoreans may have been the first to notice that the most beautiful
+  harmonies produced by lyres or flutes corresponded to the simplest fractional
+  ratios between the lengths of vibrating strings or pipes. The *Pythagorean
+  Scale* gives the numerical ratios of frequencies determining the principal
+  intervals on which Western music is essentially based. Also known as the pure
+  *diatonic scale*, these frequencies (in inverse proportion to the lengths of
+  the vibrating elements) are in the ratios 24:27:30:32:36:40:45:48, giving many
+  instances of simple ratios which underlie harmonies that are pleasing to the
+  ear.
+
+  Demonstrate an understanding of what meaning the 2-digit numbers (the 8
+  numbers separated by colons) have by matching the interval on the scale in the
+  first column with the corresponding *simple ratio* in the second column. (You
+  don\rsquo{}t need to know music theory to answer this --- logical thinking will
+  suffice.)
+
+  | Scale Interval   | Simple Ratio |
+  |------------------+--------------|
+  | a perfect unison |         15:8 |
+  | a major second   |          2:1 |
+  | a major third    |          1:1 |
+  | a perfect fourth |          5:3 |
+  | a perfect fifth  |          9:8 |
+  | a major sixth    |          5:4 |
+  | a major seventh  |          3:2 |
+  | a perfect octave |          4:3 |
+
+  Which goes with which? Reproduce the table above with the correct matching.
+
+  | Scale Interval   | Simple Ratio |
+  |------------------+--------------|
+  | a perfect unison |          1:1 |
+  | a major second   |          9:8 |
+  | a major third    |          5:4 |
+  | a perfect fourth |          4:3 |
+  | a perfect fifth  |          3:2 |
+  | a major sixth    |          5:3 |
+  | a major seventh  |         15:8 |
+  | a perfect octave |          2:1 |
+
+  Solution aquired from [[http://shodhganga.inflibnet.ac.in/bitstream/10603/59465/10/09_chapter%204.pdf][Music Interval and Ratio]]
+
+* DONE Characterize a Letter-to-Number Mapping
+  CLOSED: [2018-11-05 Mon 16:21]
+  :LOGBOOK:
+  CLOCK: [2018-11-05 Mon 10:37]--[2018-11-05 Mon 10:56] =>  0:19
+  :END:
+  Put Xs in the appropriate column (maybe more than one per row). The first four
+  rows have been done for you:
+
+  | Letter | Number | Visual       | Aural         | Other                 |
+  |        |        | (looks like) | (sounds like) | (some logical reason) |
+  |--------+--------+--------------+---------------+-----------------------|
+  | A      |      8 |              | X             |                       |
+  | B      |      9 |              |               | X                     |
+  | C      |      0 | X            |               |                       |
+  | D      |      0 | X            |               |                       |
+  | E      |      3 | X            | X             |                       |
+  | F      |      5 |              | X             | X  -  Five            |
+  | G      |      6 | X            |               | X  -  G6 car          |
+  | H      |      8 |              |               | X                     |
+  | I      |      5 |              | X             |                       |
+  | J      |      6 |              |               | X                     |
+  | K      |      8 |              | X             | X  -  Kate            |
+  | L      |      7 |              |               | X  -  Lucky 7         |
+  | M      |      3 |              |               | X                     |
+  | N      |      9 |              | X             |                       |
+  | O      |      1 |              |               | X  -  One             |
+  | P      |      9 |              |               | X                     |
+  | Q      |      4 |              |               | X                     |
+  | R      |      4 |              |               | X                     |
+  | S      |      7 |              | X             | X  -  Seven           |
+  | T      |      2 |              | X             | X  -  Two             |
+  | U      |      1 |              |               | X  -  Only 1 You      |
+  | V      |      5 |              |               | X  -  Roman Numeral   |
+  | W      |      2 |              |               | X  -  Double (two) U  |
+  | X      |      6 |              |               | X  -  Six             |
+  | Y      |      7 |              |               | X                     |
+  | Z      |      0 |              | X             | X  -  Zero            |
+
+* DONE Code The Inverse Mapping
+  CLOSED: [2018-11-05 Mon 11:32]
+  :LOGBOOK:
+  CLOCK: [2018-11-05 Mon 10:56]--[2018-11-05 Mon 11:32] =>  0:36
+  :END:
+  Since the letters-to-number mapping was many-to-one, the inverse
+  number-to-letters mapping will be one-to-many:
+
+  | Number | Letters |
+  |--------+---------|
+  |      0 | ZCD     |
+  |      1 | OU      |
+  |      2 | TW      |
+  |      3 | EM      |
+  |      4 | QR      |
+  |      5 | FIV     |
+  |      6 | GJX     |
+  |      7 | SLY     |
+  |      8 | AHK     |
+  |      9 | BNP     |
+ 
+  Write elisp code to take a string of 3 digits and generate a random TLA with
+  this mapping.
+
+#+BEGIN_SRC elisp
+  (require 'eww)
+
+  (defun get-truly-random-integer-sequence (hi)
+    (let* ((params (format "min=%d%cmax=%d%ccol=1%cformat=plain%crnd=new"
+                           1 ?& hi ?& ?& ?&))
+           (url (concat "https://www.random.org/sequences/?" params))
+           (temp-buffer (url-retrieve-synchronously url t t))
+           headers content-length end content results)
+      (with-current-buffer temp-buffer
+        (unwind-protect
+            (setq headers (eww-parse-headers)
+                  content-length (string-to-number (cdr (assoc "content-length" headers)))
+                  end (point-max)
+                  content (buffer-substring-no-properties (- end content-length) end)
+                  results (mapcar 'string-to-number (split-string content)))))
+      (kill-buffer temp-buffer)
+      results))
+
+  (defalias 'true-random 'get-truly-random-integer-sequence)
+
+  (setq map '((0 . ("Z" "C" "D")) (1 . ("O" "U")) (2 . ("T" "W")) (3 . ("E" "M")) (4 . ("Q" "R"))
+              (5 . ("F" "I" "V")) (6 . ("G" "J" "X")) (7 . ("S" "L" "Y")) (8 . ("A" "H" "K")) (9 . ("B" "N" "P"))))
+
+  (defun random-TLA (L1 L2 L3)
+    (setq C1 (nth (1- (nth 1 (true-random (length (cdr (assoc L1 map)))))) (cdr (assoc L1 map)))
+          C2 (nth (1- (nth 1 (true-random (length (cdr (assoc L2 map)))))) (cdr (assoc L2 map)))
+          C3 (nth (1- (nth 1 (true-random (length (cdr (assoc L3 map)))))) (cdr (assoc L3 map))))
+     (concat C1 C2 C3))
+
+  (random-TLA 0 2 3)
+#+END_SRC
+
+#+RESULTS:
+: DTM
+
+(random-TLA)
+
+* DONE Discern a Pattern
+  CLOSED: [2018-11-05 Mon 16:15]
+  :LOGBOOK:
+  CLOCK: [2018-11-05 Mon 12:45]--[2018-11-05 Mon 13:21] =>  0:36
+  :END:
+  In his book Brother Neff uses a TLA-based naming scheme to identify major
+  headings, minor headings, minor subheadings, and EPPs. 
+
+  The pattern for major/minor headings is trivial to discern:
+  - ONE
+    - ABC
+    - DEF
+    - GHI
+  - TWO
+    - JKL
+    - MNO
+    - PQR
+  - THR
+    - STU
+    - VWX
+    - YZ@
+
+  Minor subheadings have an easily-discernible pattern as well, e.g.:
+
+  (ABC ABD ABE ABF ABG ABH ABI ABJ ABK ABL ABM ABN ABO)
+
+  What about the EPPs (Exercises, Problems, Puzzles)? What is their pattern?
+
+  | Number | Letters |
+  |--------+---------|
+  |      0 | ZCD     |
+  |      1 | OU      |
+  |      2 | TW      |
+  |      3 | EM      |
+  |      4 | QR      |
+  |      5 | FIV     |
+  |      6 | GJX     |
+  |      7 | SLY     |
+  |      8 | AHK     |
+  |      9 | BNP     |
+
+:APPROACH:
+  From DM1:
+  week 00 - ZCD
+  week 01 - OU
+  week 02 - TW
+  week 03 - TW
+  week 04 - EM
+  week 05 - QR
+  week 06 - FIV
+  week 07 - GJX
+  week 08 - SLY
+  week 09 - SLY
+  week 10 - AHK
+  week 11 - AHK
+  week 12 - BNP
+
+  Course overview:        ZCD
+  Sets and Logic:         OU
+  Functions:              TW
+  Relations:              EM
+  Counting & Probability: QR
+  Number Theory:          FIV
+  Trees:                  GJX
+  Graphs:                 SLY
+  Languages & Grammars:   AHK
+  Course Conclusion:      BNP
+:END:
+
+  The pattern is that the first letter of each problem, puzzle, or exercise
+  is from the string of letters corresponding to the module number in which
+  the problem, puzzle, or exercise is found.
+
+  Each module has its own unique set of starting letters for its puzzles, 
+  problems, and exercises.

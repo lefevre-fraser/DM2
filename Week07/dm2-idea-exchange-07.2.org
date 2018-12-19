@@ -1,0 +1,26 @@
+#+TITLE: DM2 Idea Exchange 07.2 
+#+LANGUAGE: en
+#+OPTIONS: H:4 num:nil toc:nil \n:nil @:t ::t |:t ^:t *:t TeX:t LaTeX:t
+#+OPTIONS: html-postamble:nil
+#+STARTUP: showeverything entitiespretty
+#+SETUPFILE: ../theme-bigblow.setup
+
+* DONE Watch and Analyze
+  CLOSED: [2018-11-01 Thu 23:11]
+  :LOGBOOK:
+  CLOCK: [2018-11-01 Thu 23:01]--[2018-11-01 Thu 23:11] =>  0:10
+  CLOCK: [2018-11-01 Thu 15:40]--[2018-11-01 Thu 15:52] =>  0:12
+  :END:
+  Watch these three videos and (if you were making them) describe what you would
+  do differently to make them better:
+
+  - [[https://firstthreeodds.org/videos/modulus2.mp4][Modulus]]
+  - [[https://firstthreeodds.org/videos/modularInverse.mp4][Modular Inverse]]
+  - [[https://firstthreeodds.org/videos/Remainder.mp4][Chinese Remaindering]]
+
+  First post your answer.
+
+  I would plan out my examples better (not neccessarily change them, just plan them better)
+  Chinease Remainder Video - I would finish the video at least by showing the solution.
+
+  Then post on two other students' answers.

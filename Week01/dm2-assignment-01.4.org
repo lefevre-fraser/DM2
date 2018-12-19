@@ -1,0 +1,190 @@
+#+TITLE: DM2 Assignment 01.4 
+#+LANGUAGE: en
+#+OPTIONS: H:4 num:nil toc:nil \n:nil @:t ::t |:t ^:t *:t TeX:t LaTeX:t
+#+OPTIONS: html-postamble:nil
+#+STARTUP: showeverything
+#+SETUPFILE: theme-bigblow.setup
+
+[[elisp:(browse-url-of-file%20(org-html-export-to-html))][Export to HTML and Browse]]
+[[elisp:(org-clock-report%201)][Insert/Update Clock Summary Report]]
+#+BEGIN: clocktable :scope file :maxlevel 2
+#+CAPTION: Clock summary at [2018-09-24 Mon 09:30]
+| Headline                            |   Time |
+|-------------------------------------+--------|
+| *Total time*                        | *2:19* |
+|-------------------------------------+--------|
+| What is it about these four words?  |   0:07 |
+| What about these numbers?           |   0:06 |
+| Answer a What Question and a Why... |   0:12 |
+| Answer a Fuzzy Question             |   0:22 |
+| Answer a Hash Question              |   1:32 |
+#+END:
+
+* DONE What is it about these four words?
+  CLOSED: [2018-09-22 Sat 16:37]
+  :LOGBOOK:
+  CLOCK: [2018-09-22 Sat 16:30]--[2018-09-22 Sat 16:37] =>  0:07
+  :END:
+  Which of the words below is least like the others? (The difference has nothing
+  to do with vowels, consonants or syllables.)
+
+  ADMIT    PARADE 
+  HONOR    SAVAGE
+
+ADMIT is something you do
+HONOR is something you have, but you can also honor someone, so, HONOR is also somthing you do
+a PARADE is an event, but you can also parade around, so, PARADE is something you do
+SAVAGE is a descriptive word
+
+SAVAGE is least like the others
+All of the above words can be used as verbs except SAVAGE
+
+* DONE What about these numbers?
+  CLOSED: [2018-09-24 Mon 07:58]
+  :LOGBOOK:
+  CLOCK: [2018-09-24 Mon 07:54]--[2018-09-24 Mon 07:57] =>  0:03
+  CLOCK: [2018-09-22 Sat 19:19]--[2018-09-22 Sat 19:22] =>  0:03
+  :END:
+
+   Can you discern the pattern in these numbers? 
+
+   If so, to follow the pattern by what non-zero number would you replace 0?
+
+#+BEGIN_SRC elisp
+  [2 3 2 2 5 2 0 7 2 2 2 3 3]
+#+END_SRC
+
+
+This is a counting sequence using prime number factorization:
+if a number, say, 4 is encountered, then the count is 2 2, if 6 then 2 3, and so on.
+The sequence goes all the way from 2 to 9.
+
+The number to replace the zero is 3.
+
+* DONE Answer a What Question and a Why Question
+  CLOSED: [2018-09-22 Sat 16:53]
+  :LOGBOOK:
+  CLOCK: [2018-09-22 Sat 16:40]--[2018-09-22 Sat 16:52] =>  0:12
+  :END:
+
+  What is the cardinality of the /Power Set/ of a set of size n? Why?
+
+A power set is the set of all subsets
+Example:
+  Set:           { A, B, C }
+
+  All Subsets:   {}
+                 { C }
+                 { B }
+                 { B, C }
+                 ( A }
+                 { A, C }
+                 { A, B }
+                 { A, B, C }
+
+  As Binary:     0 0 0
+                 0 0 1
+                 0 1 0
+                 0 1 1
+                 1 0 0
+                 1 0 1
+                 1 1 0
+                 1 1 1
+
+Cardinality of powerset is: 2^3 = 8
+
+Cardinality of a set is the size of a set
+From the example we can see that the size of the powerset
+can be represented by 2^n
+
+* DONE Answer a Fuzzy Question
+  CLOSED: [2018-09-22 Sat 19:45]
+  :LOGBOOK:
+  CLOCK: [2018-09-22 Sat 19:23]--[2018-09-22 Sat 19:45] =>  0:22
+  :END:
+
+  Investigate and report on some application of *fuzzy sets* and *fuzzy logic*.
+
+Fuzzy Sets and Logic:
+Something is considdered *fuzzy* if it is not 
+black and white, meaning there are degrees of
+variance to the truthfullness of a statement or thing.
+
+For example: 
+  How can we say someone is tall?
+  Well, the answer is not simple.
+  There is no exact height where
+  someone will magically become tall
+  if they pass it. So whether or not 
+  someone is tall is a *fuzzy* concept.
+
+Fuzzy sets and logic has many applications,
+it helps us to look at things in ways computers
+can not quite do. Regular computers rely on ones and zeros
+and are not capable of registring somthing as in-between.
+Quantum computers however are able to register any number 
+between 1 and 0. This iss what makes Quantum computers
+so much better at solving things; they use the fuzzy.
+
+Fuzzyness allows for the grouping of things in various ways
+that are not available to us otherwise.
+
+* DONE Answer a Hash Question
+  CLOSED: [2018-09-24 Mon 09:30]
+  :LOGBOOK:
+  CLOCK: [2018-09-24 Mon 07:58]--[2018-09-24 Mon 09:30] =>  1:32
+  :END:
+  From your increased understanding following your reading of the first four
+  pages of the [[http://matt.might.net/papers/liang2014godel.pdf][Fast Flow Analysis with G\ouml{}del Hashes]] paper, compute the hash as
+  shown in class for a few sets and subsets of your devising.
+
+  What observations can you make?
+
+  (We will be reading and revisiting this paper throughout the semester as we
+  learn more, so hang in there!)
+
+; next-prime
+; finds the next prime number in the sequence
+(setq prime-numb 2)
+(defun next-prime (&optional number)
+  (if number (setq prime-numb number))
+  (setq prime-numb (+ 1 prime-numb))
+  (loop until (is-prime prime-numb)
+    do (setq prime-numb (+ 1 prime-numb)))
+  (format "%d" prime-numb))
+
+(next-prime)"101"
+
+set:      { a b c d e  f  g  h  i  j  k  l  m  n  o  p  q  r  s  t  u  v  w  x  y  z   } hash: 2.3286236435849736090006331688051e+38
+hashes:   { 2 3 5 7 11 13 17 19 23 29 31 37 41 43 47 53 59 61 67 71 73 79 83 89 97 101 }
+subset:   { a e  i  o  u  y  }                                                           hash: 168400342
+          { 2 11 23 47 73 97 }
+subset:   { b c d f  g  h  j  k  l  m  n  p  q  r  s  t  v  w  x  z   }                  hash: 1121886493535249036299319977635
+          { 3 5 7 13 17 19 29 31 37 41 43 53 59 61 67 71 79 83 89 101 }
+
+set:      { 0 1 2 3 4  5  6  7  8  9  } hash: 6469693230
+hashes:   { 2 3 5 7 11 13 17 19 23 29 }
+subset:   { 0 1 3 3 4  }                hash: 2310
+          { 2 3 5 7 11 }
+subset:   { 6  7  8  9  }               hash: 215441
+          { 17 19 23 29 }
+subset:   { 5  }                        hash: 13
+          { 13 } 
+
+set:      { he be no go in if fi qi } hash: 9699690
+hashes:   { 2  3  5  7  11 13 17 19 }
+subset:   { he be }                   hash: 6
+          { 2  3  }
+subset:   { no go }                   hash: 35
+          { 5  7  }
+subset:   { in if }                   hash: 143
+          { 11 13 }
+subset:   { fi qi }                   hash: 323
+          { 17 19 }
+
+Observations:
+  This way of creating hashes is very good. It creates a perfect hash
+because each number has a unique prime factorization; and for any new
+elements to a set, you just assign it the next prime number. This is a
+rally cool concept that you can create a perfect hash! Not only for the
+elements themselves, but also for all subsets!
